@@ -508,7 +508,7 @@ export function HeroSection() {
 
             {/* CTA Buttons */}
             <motion.div variants={stagger.item} className="flex flex-col sm:flex-row gap-3 mt-8">
-              <Link href="/dashboard">
+              <Link href="/student/dashboard">
                 <motion.button
                   whileHover={{ scale: 1.04, y: -2 }}
                   whileTap={{ scale: 0.97 }}

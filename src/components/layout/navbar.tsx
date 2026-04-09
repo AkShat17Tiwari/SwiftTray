@@ -176,7 +176,7 @@ export function Navbar() {
 
               {/* Portal Links */}
               <div className="hidden md:flex items-center gap-1.5">
-                <Link href="/dashboard">
+                <Link href="/student/dashboard">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -186,7 +186,7 @@ export function Navbar() {
                     Student
                   </motion.button>
                 </Link>
-                <Link href="/vendor/access">
+                <Link href="/vendor/dashboard">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -257,7 +257,7 @@ export function Navbar() {
                 <div className="border-t border-border/30 mt-2 pt-2">
                   <p className="px-4 py-1 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">Portals</p>
                   <Link
-                    href="/dashboard"
+                    href="/student/dashboard"
                     className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
                   >
                     <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
@@ -266,7 +266,7 @@ export function Navbar() {
                     Student Portal
                   </Link>
                   <Link
-                    href="/vendor/access"
+                    href="/vendor/dashboard"
                     className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
                   >
                     <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center">

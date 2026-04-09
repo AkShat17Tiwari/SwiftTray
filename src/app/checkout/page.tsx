@@ -559,7 +559,7 @@ export default function CheckoutPage() {
                     whileTap={{ scale: 0.95 }}
                     onClick={() => {
                       clearCart();
-                      router.push("/dashboard");
+                      router.push("/student/dashboard");
                     }}
                     className="px-6 py-3 rounded-xl border border-border font-semibold hover:bg-secondary transition-colors"
                   >
