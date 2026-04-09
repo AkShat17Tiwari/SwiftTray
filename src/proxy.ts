@@ -87,7 +87,7 @@ export default clerkMiddleware(async (auth, req) => {
 
     // Step 2: RBAC role check
     if (role !== "admin" && role !== "super_admin") {
-      return NextResponse.redirect(new URL("/student/dashboard", req.url));
+      return NextResponse.redirect(new URL("/sign-in", req.url));
     }
 
     // Step 3: Allow access gate page without cookie
@@ -118,7 +118,7 @@ export default clerkMiddleware(async (auth, req) => {
 
     // Step 2: RBAC role check
     if (role !== "vendor" && role !== "admin" && role !== "super_admin") {
-      return NextResponse.redirect(new URL("/student/dashboard", req.url));
+      return NextResponse.redirect(new URL("/sign-in", req.url));
     }
 
     // Step 3: Allow access gate page without cookie
