@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { RolePortalButtons } from "@/components/portal/role-portal-buttons";
 import {
   ArrowRight, Play, Zap, Clock, Store, Timer,
   CheckCircle, ChefHat, Bell, MapPin, Star, TrendingUp,
-  Users, ShoppingBag, Shield,
+  Users, ShoppingBag,
 } from "lucide-react";
 
 /* ─────────────────────────────────────────────
@@ -530,60 +531,9 @@ export function HeroSection() {
               </motion.button>
             </motion.div>
 
-            {/* ── Portal Entry Cards ── */}
-            <motion.div variants={stagger.item} className="grid grid-cols-3 gap-2.5 sm:gap-3 mt-7">
-              {[
-                {
-                  label: "Student",
-                  href: "/dashboard",
-                  icon: Users,
-                  gradient: "from-cyan-500 to-blue-500",
-                  glow: "hover:shadow-[0_0_30px_rgba(34,211,238,0.2)]",
-                  borderGlow: "from-cyan-400 to-blue-500",
-                  desc: "Order & Track",
-                },
-                {
-                  label: "Vendor",
-                  href: "/vendor/access",
-                  icon: Store,
-                  gradient: "from-orange-500 to-amber-500",
-                  glow: "hover:shadow-[0_0_30px_rgba(249,115,22,0.2)]",
-                  borderGlow: "from-orange-400 to-amber-500",
-                  desc: "Manage Outlet",
-                },
-                {
-                  label: "Admin",
-                  href: "/admin/access",
-                  icon: Shield,
-                  gradient: "from-purple-500 to-indigo-500",
-                  glow: "hover:shadow-[0_0_30px_rgba(168,85,247,0.2)]",
-                  borderGlow: "from-purple-400 to-indigo-500",
-                  desc: "Control Center",
-                },
-              ].map((portal, i) => (
-                <Link key={portal.label} href={portal.href}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1.4 + i * 0.1, type: "spring", stiffness: 300 }}
-                    whileHover={{ scale: 1.05, y: -4 }}
-                    whileTap={{ scale: 0.97 }}
-                    className={`relative group cursor-pointer rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-md p-3 sm:p-4 text-center transition-all duration-300 ${portal.glow}`}
-                  >
-                    {/* Gradient border on hover */}
-                    <div className={`absolute -inset-[1px] rounded-2xl bg-gradient-to-br ${portal.borderGlow} opacity-0 group-hover:opacity-[0.12] transition-opacity duration-300 -z-10`} />
-
-                    <div className={`mx-auto w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br ${portal.gradient} flex items-center justify-center mb-2 shadow-lg`}>
-                      <portal.icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                    </div>
-                    <p className="text-xs sm:text-sm font-bold text-foreground">{portal.label}</p>
-                    <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">{portal.desc}</p>
-
-                    {/* Subtle arrow */}
-                    <ArrowRight className="w-3 h-3 text-muted-foreground mx-auto mt-1.5 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200" />
-                  </motion.div>
-                </Link>
-              ))}
+            {/* ── Portal Entry Cards (Auth-Aware) ── */}
+            <motion.div variants={stagger.item} className="mt-7">
+              <RolePortalButtons />
             </motion.div>
 
             {/* Benefit Chips */}
