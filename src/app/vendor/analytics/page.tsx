@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import { ChartCard } from "@/components/dashboard/chart-card";
 import { StatCard } from "@/components/dashboard/stat-card";
-import { DollarSign, TrendingUp, Clock, ShoppingBag, Users, Repeat } from "lucide-react";
+import { DollarSign, Clock, ShoppingBag, Repeat } from "lucide-react";
 
 const REVENUE_DATA = [
   { day: "Mon", revenue: 6045, orders: 18 },
@@ -40,25 +40,25 @@ const PEAK_HOURS = [
 ];
 
 const ORDER_STATUS = [
-  { name: "Completed", value: 72, color: "#10b981" },
-  { name: "Preparing", value: 12, color: "#f59e0b" },
-  { name: "Cancelled", value: 8, color: "#ef4444" },
-  { name: "Pending", value: 8, color: "#6366f1" },
+  { name: "Completed", value: 72, color: "#68D89B" },
+  { name: "Preparing", value: 12, color: "#F5A623" },
+  { name: "Cancelled", value: 8, color: "#E85D75" },
+  { name: "Pending", value: 8, color: "#5B9BD5" },
 ];
 
 const STATS = [
-  { label: "Weekly Revenue", value: "₹50,685", change: "+18%", trend: "up" as const, icon: DollarSign, color: "from-emerald-500 to-teal-500" },
-  { label: "Total Orders", value: "154", change: "+12%", trend: "up" as const, icon: ShoppingBag, color: "from-indigo-500 to-purple-500" },
-  { label: "Avg Prep Time", value: "11 min", change: "-2 min", trend: "up" as const, icon: Clock, color: "from-amber-500 to-orange-500" },
-  { label: "Repeat Rate", value: "68%", change: "+5%", trend: "up" as const, icon: Repeat, color: "from-blue-500 to-cyan-500" },
+  { label: "Weekly Revenue", value: "₹50,685", change: "+18%", trend: "up" as const, icon: DollarSign, color: "from-[#68D89B] to-[#5BC898]" },
+  { label: "Total Orders", value: "154", change: "+12%", trend: "up" as const, icon: ShoppingBag, color: "from-[#5DE5D5] to-[#6EC6C8]" },
+  { label: "Avg Prep Time", value: "11 min", change: "-2 min", trend: "up" as const, icon: Clock, color: "from-[#F5A623] to-[#E8961C]" },
+  { label: "Repeat Rate", value: "68%", change: "+5%", trend: "up" as const, icon: Repeat, color: "from-[#5B9BD5] to-[#4A8BC0]" },
 ];
 
-const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
+const NeuTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-card/90 backdrop-blur-md border border-border rounded-lg px-3 py-2 shadow-xl">
-        <p className="text-xs font-bold">{label}</p>
-        <p className="text-xs text-primary">₹{payload[0].value.toLocaleString()}</p>
+      <div className="neu-card-static px-3 py-2 text-xs">
+        <p className="font-bold">{label}</p>
+        <p className="text-primary">₹{payload[0].value.toLocaleString()}</p>
       </div>
     );
   }
@@ -84,13 +84,13 @@ export default function VendorAnalyticsPage() {
             Performance metrics for Spice Junction
           </p>
         </div>
-        <div className="flex gap-1 p-1 bg-secondary rounded-lg">
+        <div className="flex gap-1 p-1 rounded-xl neu-pressed-sm">
           {(["7d", "30d"] as const).map((r) => (
             <button
               key={r}
               onClick={() => setTimeRange(r)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                timeRange === r ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                timeRange === r ? "neu-raised-sm text-foreground" : "text-muted-foreground"
               }`}
             >
               {r === "7d" ? "7 Days" : "30 Days"}
@@ -109,57 +109,57 @@ export default function VendorAnalyticsPage() {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue Trend */}
-        <ChartCard title="Revenue Trend" subtitle="Last 7 days">
+        <ChartCard title="Revenue Trend">
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={REVENUE_DATA}>
                 <defs>
                   <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#5DE5D5" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#5DE5D5" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="day" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.4)" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "rgba(255,255,255,0.4)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
-                <Tooltip content={<CustomTooltip />} />
-                <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2} fill="url(#revenueGradient)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(163,177,198,0.2)" />
+                <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#7B8BA3" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "#7B8BA3" }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
+                <Tooltip content={<NeuTooltip />} />
+                <Area type="monotone" dataKey="revenue" stroke="#5DE5D5" strokeWidth={2} fill="url(#revenueGradient)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </ChartCard>
 
         {/* Top Items */}
-        <ChartCard title="Top Items" subtitle="By order volume">
+        <ChartCard title="Top Items">
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={TOP_ITEMS_DATA} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.4)" }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.6)" }} axisLine={false} tickLine={false} width={80} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(163,177,198,0.2)" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 11, fill: "#7B8BA3" }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#31344B" }} axisLine={false} tickLine={false} width={80} />
                 <Tooltip
-                  contentStyle={{ background: "rgba(15,22,41,0.9)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", fontSize: "12px" }}
+                  contentStyle={{ background: "#E4EBF5", border: "none", borderRadius: "12px", fontSize: "12px", boxShadow: "4px 4px 10px rgba(163,177,198,0.5), -4px -4px 10px #FFFFFF" }}
                 />
-                <Bar dataKey="orders" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={20} />
+                <Bar dataKey="orders" fill="#5DE5D5" radius={[0, 8, 8, 0]} barSize={20} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </ChartCard>
 
         {/* Peak Hours */}
-        <ChartCard title="Peak Hours" subtitle="Orders by hour">
+        <ChartCard title="Peak Hours">
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={PEAK_HOURS}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="hour" tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "rgba(255,255,255,0.4)" }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(163,177,198,0.2)" />
+                <XAxis dataKey="hour" tick={{ fontSize: 10, fill: "#7B8BA3" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "#7B8BA3" }} axisLine={false} tickLine={false} />
                 <Tooltip
-                  contentStyle={{ background: "rgba(15,22,41,0.9)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", fontSize: "12px" }}
+                  contentStyle={{ background: "#E4EBF5", border: "none", borderRadius: "12px", fontSize: "12px", boxShadow: "4px 4px 10px rgba(163,177,198,0.5), -4px -4px 10px #FFFFFF" }}
                 />
-                <Bar dataKey="orders" radius={[4, 4, 0, 0]} barSize={24}>
+                <Bar dataKey="orders" radius={[8, 8, 0, 0]} barSize={24}>
                   {PEAK_HOURS.map((entry, idx) => (
-                    <Cell key={idx} fill={entry.orders > 35 ? "#f59e0b" : entry.orders > 20 ? "#6366f1" : "#3b82f6"} />
+                    <Cell key={idx} fill={entry.orders > 35 ? "#F5A623" : entry.orders > 20 ? "#5DE5D5" : "#5B9BD5"} />
                   ))}
                 </Bar>
               </BarChart>
@@ -168,7 +168,7 @@ export default function VendorAnalyticsPage() {
         </ChartCard>
 
         {/* Order Status */}
-        <ChartCard title="Order Status" subtitle="Distribution this week">
+        <ChartCard title="Order Status">
           <div className="h-64 flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -186,7 +186,7 @@ export default function VendorAnalyticsPage() {
                   ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={{ background: "rgba(15,22,41,0.9)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", fontSize: "12px" }}
+                  contentStyle={{ background: "#E4EBF5", border: "none", borderRadius: "12px", fontSize: "12px", boxShadow: "4px 4px 10px rgba(163,177,198,0.5), -4px -4px 10px #FFFFFF" }}
                 />
               </PieChart>
             </ResponsiveContainer>

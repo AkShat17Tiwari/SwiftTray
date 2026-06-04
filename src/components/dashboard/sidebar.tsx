@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ChevronLeft, ChevronRight, LogOut, Settings,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import type { LucideIcon } from "lucide-react";
@@ -24,7 +24,7 @@ interface SidebarProps {
   accentColor?: string;
 }
 
-export function DashboardSidebar({ title, subtitle, items, accentColor = "from-indigo-500 to-purple-500" }: SidebarProps) {
+export function DashboardSidebar({ title, subtitle, items, accentColor = "from-[#5DE5D5] to-[#6EC6C8]" }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
 
@@ -35,12 +35,12 @@ export function DashboardSidebar({ title, subtitle, items, accentColor = "from-i
         initial={false}
         animate={{ width: collapsed ? 72 : 260 }}
         transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-        className="hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-card/50 backdrop-blur-xl border-r border-border/50 z-40"
+        className="hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-[#E4EBF5] z-40 shadow-[6px_0_14px_rgba(163,177,198,0.4)]"
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 h-16 border-b border-border/50">
-          <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${accentColor} flex items-center justify-center flex-shrink-0`}>
-            <span className="text-white text-sm font-bold">S</span>
+        <div className="flex items-center gap-3 px-4 h-16 border-b border-[#C8D0E0]">
+          <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${accentColor} flex items-center justify-center flex-shrink-0 shadow-neu-sm`}>
+            <span className="text-[#1A2E35] text-sm font-bold">S</span>
           </div>
           <AnimatePresence>
             {!collapsed && (
@@ -60,7 +60,7 @@ export function DashboardSidebar({ title, subtitle, items, accentColor = "from-i
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
+        <nav className="flex-1 py-4 px-2 space-y-1.5 overflow-y-auto">
           {items.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
             const Icon = item.icon;
@@ -70,8 +70,8 @@ export function DashboardSidebar({ title, subtitle, items, accentColor = "from-i
                   whileHover={{ x: 2 }}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative ${
                     isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                      ? "neu-pressed-sm text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:shadow-neu-sm"
                   }`}
                 >
                   {isActive && (
@@ -95,7 +95,7 @@ export function DashboardSidebar({ title, subtitle, items, accentColor = "from-i
                     )}
                   </AnimatePresence>
                   {item.badge !== undefined && item.badge > 0 && !collapsed && (
-                    <span className="ml-auto w-5 h-5 rounded-full bg-primary/20 text-primary text-[10px] font-bold flex items-center justify-center">
+                    <span className="ml-auto w-5 h-5 rounded-full gradient-mint text-[#1A2E35] text-[10px] font-bold flex items-center justify-center">
                       {item.badge}
                     </span>
                   )}
@@ -106,7 +106,7 @@ export function DashboardSidebar({ title, subtitle, items, accentColor = "from-i
         </nav>
 
         {/* Footer */}
-        <div className="p-3 border-t border-border/50">
+        <div className="p-3 border-t border-[#C8D0E0]">
           <div className="flex items-center gap-3 px-2">
             <UserButton
               appearance={{
@@ -130,7 +130,7 @@ export function DashboardSidebar({ title, subtitle, items, accentColor = "from-i
           </div>
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+            className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-muted-foreground hover:text-foreground neu-btn transition-colors"
           >
             {collapsed ? (
               <ChevronRight className="w-4 h-4" />
@@ -145,17 +145,21 @@ export function DashboardSidebar({ title, subtitle, items, accentColor = "from-i
       </motion.aside>
 
       {/* Mobile bottom nav */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 bg-card/90 backdrop-blur-xl border-t border-border/50 z-40 px-2 py-1 safe-area-bottom">
+      <div className="lg:hidden fixed bottom-0 inset-x-0 bg-[#E4EBF5] shadow-[0_-4px_14px_rgba(163,177,198,0.5)] z-40 px-2 py-1 safe-area-bottom">
         <div className="flex items-center justify-around">
           {items.slice(0, 5).map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
             const Icon = item.icon;
             return (
               <Link key={item.href} href={item.href}>
-                <div className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-colors ${
+                <div className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all ${
                   isActive ? "text-primary" : "text-muted-foreground"
                 }`}>
-                  <Icon className="w-5 h-5" />
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                    isActive ? "neu-pressed-sm" : ""
+                  }`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
                   <span className="text-[9px] font-medium">{item.label}</span>
                 </div>
               </Link>

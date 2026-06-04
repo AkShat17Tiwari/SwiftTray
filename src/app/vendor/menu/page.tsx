@@ -1,19 +1,49 @@
 "use client";
 
 import { useState } from "react";
+import { useUser } from "@clerk/nextjs";
+import { useMutation, useQuery } from "convex/react";
 import { motion } from "framer-motion";
 import { Plus, Search, Edit2, Trash2 } from "lucide-react";
-import { MOCK_MENU_ITEMS } from "@/lib/mock-data";
+import { api } from "@convex/_generated/api";
 import { formatPrice } from "@/lib/utils";
+import { toast } from "sonner";
+import type { MenuItem, Outlet } from "@/types";
+import type { Id } from "@convex/_generated/dataModel";
+
+type VendorOutlet = Outlet & { _id: Id<"outlets"> };
+type VendorMenuItem = MenuItem & { _id: Id<"menuItems"> };
 
 export default function VendorMenuPage() {
   const [search, setSearch] = useState("");
-  const outletItems = MOCK_MENU_ITEMS.filter((i) => i.outletId === "outlet_1");
+  const { user } = useUser();
+  const workspace = useQuery(
+    api.dashboards.vendorWorkspace,
+    user?.id ? { vendorUserId: user.id } : "skip"
+  ) as { outlet: VendorOutlet } | null | undefined;
+  const outlet = workspace?.outlet ?? null;
+  const liveItems = useQuery(
+    api.menuItems.listByOutlet,
+    outlet ? { outletId: outlet._id } : "skip"
+  ) as VendorMenuItem[] | undefined;
+  const toggleAvailability = useMutation(api.menuItems.toggleAvailability);
+  const outletItems = liveItems ?? [];
+  const isLoading =
+    workspace === undefined || (outlet !== null && liveItems === undefined);
   const filtered = outletItems.filter(
     (i) => i.name.toLowerCase().includes(search.toLowerCase()) || i.category.toLowerCase().includes(search.toLowerCase())
   );
 
   const categories = [...new Set(outletItems.map((i) => i.category))];
+
+  const handleToggle = async (id: Id<"menuItems">) => {
+    try {
+      await toggleAvailability({ id });
+      toast.success("Availability updated");
+    } catch {
+      toast.error("Could not update item");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -28,7 +58,7 @@ export default function VendorMenuPage() {
             Menu <span className="gradient-text">Management</span>
           </h1>
           <p className="text-sm text-muted-foreground">
-            {outletItems.length} items across {categories.length} categories
+            {outlet?.name ?? "No outlet selected"} • {outletItems.length} items across {categories.length} categories
           </p>
         </div>
         <button className="px-4 py-2.5 rounded-xl gradient-primary text-white text-sm font-semibold shadow-colored flex items-center gap-2">
@@ -49,6 +79,18 @@ export default function VendorMenuPage() {
       </div>
 
       {/* Categories */}
+      {isLoading && (
+        <div className="py-16 text-center text-sm text-muted-foreground">
+          Loading live menu...
+        </div>
+      )}
+
+      {!isLoading && !outlet && (
+        <div className="py-16 text-center text-sm text-muted-foreground">
+          Verify a vendor key before managing your menu.
+        </div>
+      )}
+
       {categories.map((cat) => {
         const items = filtered.filter((i) => i.category === cat);
         if (items.length === 0) return null;
@@ -85,6 +127,7 @@ export default function VendorMenuPage() {
                   <div className="flex items-center gap-3">
                     {/* Availability toggle */}
                     <button
+                      onClick={() => handleToggle(item._id)}
                       className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${
                         item.isAvailable ? "bg-emerald-500" : "bg-muted"
                       }`}

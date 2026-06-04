@@ -21,12 +21,12 @@ const ADMIN_NAV = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#E4EBF5]">
       <DashboardSidebar
         title="SwiftTray"
         subtitle="Admin Control Center"
         items={ADMIN_NAV}
-        accentColor="from-rose-500 to-orange-500"
+        accentColor="from-[#FF8A80] to-[#FF6B6B]"
       />
       <main className="lg:pl-[260px] pt-4 pb-20 lg:pb-8 px-4 lg:px-8">
         <div className="max-w-7xl mx-auto">

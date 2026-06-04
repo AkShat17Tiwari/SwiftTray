@@ -32,7 +32,7 @@ export function Testimonials() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              className="glass-card p-6 relative"
+              className="neu-card p-6 relative"
             >
               <Quote className="absolute top-4 right-4 w-8 h-8 text-primary/10" />
 
@@ -57,7 +57,7 @@ export function Testimonials() {
 
               {/* Author */}
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-white text-sm font-bold">
+                <div className="w-10 h-10 rounded-full gradient-mint flex items-center justify-center text-[#1A2E35] text-sm font-bold shadow-neu-sm">
                   {testimonial.avatar}
                 </div>
                 <div>

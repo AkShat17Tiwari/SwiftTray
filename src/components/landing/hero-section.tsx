@@ -18,12 +18,6 @@ const stagger = {
   item: { hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: "easeOut" as const } } },
 };
 
-const fadeUp = (delay = 0) => ({
-  initial: { opacity: 0, y: 24 },
-  animate: { opacity: 1, y: 0 },
-  transition: { delay, duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] },
-});
-
 /* ─────────────────────────────────────────────
    Animated headline words
    ───────────────────────────────────────────── */
@@ -33,10 +27,10 @@ const ROTATING_WORDS = ["Minutes", "Seconds", "No Time"];
    Benefit chips
    ───────────────────────────────────────────── */
 const BENEFITS = [
-  { icon: Timer, label: "2 min ordering", color: "from-orange-500 to-amber-500" },
-  { icon: Clock, label: "Live ETA", color: "from-cyan-500 to-blue-500" },
-  { icon: Store, label: "15+ outlets", color: "from-purple-500 to-indigo-500" },
-  { icon: Zap, label: "No waiting", color: "from-emerald-500 to-teal-500" },
+  { icon: Timer, label: "2 min ordering" },
+  { icon: Clock, label: "Live ETA" },
+  { icon: Store, label: "15+ outlets" },
+  { icon: Zap, label: "No waiting" },
 ];
 
 /* ─────────────────────────────────────────────
@@ -52,74 +46,13 @@ const TRUST_STATS = [
    Food cards for orbital display
    ───────────────────────────────────────────── */
 const FOOD_CARDS = [
-  { emoji: "🍔", name: "Classic Burger", price: "₹120", color: "from-orange-400 to-amber-500" },
-  { emoji: "🍕", name: "Margherita", price: "₹180", color: "from-red-400 to-orange-500" },
-  { emoji: "🍜", name: "Ramen Bowl", price: "₹150", color: "from-amber-400 to-yellow-500" },
-  { emoji: "🥤", name: "Berry Shake", price: "₹90", color: "from-pink-400 to-rose-500" },
-  { emoji: "🌮", name: "Loaded Taco", price: "₹110", color: "from-green-400 to-emerald-500" },
-  { emoji: "☕", name: "Cappuccino", price: "₹80", color: "from-amber-600 to-orange-700" },
+  { emoji: "🍔", name: "Classic Burger", price: "₹120" },
+  { emoji: "🍕", name: "Margherita", price: "₹180" },
+  { emoji: "🍜", name: "Ramen Bowl", price: "₹150" },
+  { emoji: "🥤", name: "Berry Shake", price: "₹90" },
+  { emoji: "🌮", name: "Loaded Taco", price: "₹110" },
+  { emoji: "☕", name: "Cappuccino", price: "₹80" },
 ];
-
-/* ─────────────────────────────────────────────
-   Ambient Fish
-   ───────────────────────────────────────────── */
-function AmbientFish({ x, y, dir, delay, size }: { x: number; y: number; dir: number; delay: number; size: number }) {
-  return (
-    <motion.div
-      className="absolute pointer-events-none select-none"
-      style={{ left: `${x}%`, top: `${y}%`, fontSize: size, ["--dir" as string]: dir }}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: [0, 0.25, 0.2, 0.25, 0] }}
-      transition={{ duration: 12, delay, repeat: Infinity, ease: "easeInOut" }}
-    >
-      <div style={{ animation: `swim ${14 + delay * 2}s ease-in-out infinite ${delay}s`, transform: `scaleX(${dir})` }}>
-        🐟
-      </div>
-    </motion.div>
-  );
-}
-
-/* ─────────────────────────────────────────────
-   Ambient Bubble
-   ───────────────────────────────────────────── */
-function Bubble({ x, size, delay }: { x: number; size: number; delay: number }) {
-  return (
-    <motion.div
-      className="absolute rounded-full pointer-events-none"
-      style={{
-        left: `${x}%`,
-        bottom: "-5%",
-        width: size,
-        height: size,
-        background: "radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%)",
-        border: "1px solid rgba(99,102,241,0.06)",
-      }}
-      animate={{
-        y: [0, -900],
-        opacity: [0, 0.5, 0.3, 0],
-        scale: [0.8, 1.1, 0.9, 0.4],
-      }}
-      transition={{ duration: 10 + delay * 1.5, delay, repeat: Infinity, ease: "easeOut" }}
-    />
-  );
-}
-
-/* ─────────────────────────────────────────────
-   Glowing Background Orb
-   ───────────────────────────────────────────── */
-function GlowOrb({ className, color, size }: { className: string; color: string; size: number }) {
-  return (
-    <div
-      className={`absolute rounded-full blur-3xl pointer-events-none ${className}`}
-      style={{
-        width: size,
-        height: size,
-        background: color,
-        animation: "morph-blob 12s ease-in-out infinite",
-      }}
-    />
-  );
-}
 
 /* ─────────────────────────────────────────────
    Animated Counter
@@ -131,16 +64,12 @@ function Counter({ value, suffix }: { value: number; suffix: string }) {
 
   useEffect(() => {
     const unsub = rounded.on("change", (v) => setDisplay(v));
-    // Animate from 0 to value after delay
     const timeout = setTimeout(() => {
-      const controls = motionVal.set(0);
-      // Simple spring-like tween
       const duration = 2000;
       const startTime = performance.now();
       const step = (now: number) => {
         const elapsed = now - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        // EaseOutQuart
         const eased = 1 - Math.pow(1 - progress, 4);
         motionVal.set(eased * value);
         if (progress < 1) requestAnimationFrame(step);
@@ -154,7 +83,7 @@ function Counter({ value, suffix }: { value: number; suffix: string }) {
 }
 
 /* ─────────────────────────────────────────────
-   Phone Mockup — The WOW Factor
+   Phone Mockup — Neumorphic
    ───────────────────────────────────────────── */
 function PhoneMockup({ mouseX, mouseY }: { mouseX: number; mouseY: number }) {
   const rotateX = useSpring(useMotionValue(0), { stiffness: 100, damping: 30 });
@@ -170,16 +99,16 @@ function PhoneMockup({ mouseX, mouseY }: { mouseX: number; mouseY: number }) {
       style={{ rotateX, rotateY, perspective: 1200 }}
       className="relative w-[260px] h-[520px] md:w-[280px] md:h-[560px]"
     >
-      {/* Phone Frame */}
-      <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-b from-gray-800 to-gray-900 p-[3px] shadow-2xl">
-        <div className="w-full h-full rounded-[2.4rem] bg-gradient-to-b from-[#0f1629] to-[#0a0e1a] overflow-hidden relative">
+      {/* Phone Frame — Neumorphic */}
+      <div className="absolute inset-0 rounded-[2.5rem] bg-[#E4EBF5] p-[3px] shadow-[12px_12px_24px_rgba(163,177,198,0.7),-12px_-12px_24px_#FFFFFF]">
+        <div className="w-full h-full rounded-[2.4rem] bg-[#E4EBF5] overflow-hidden relative shadow-[inset_4px_4px_8px_rgba(163,177,198,0.5),inset_-4px_-4px_8px_#FFFFFF]">
           {/* Status Bar */}
           <div className="flex items-center justify-between px-6 pt-3 pb-1">
-            <span className="text-white/50 text-[10px] font-medium">12:42</span>
-            <div className="w-20 h-5 rounded-full bg-black" />
+            <span className="text-[#31344B]/50 text-[10px] font-medium">12:42</span>
+            <div className="w-20 h-5 rounded-full bg-[#31344B]/10 shadow-[inset_1px_1px_3px_rgba(163,177,198,0.4)]" />
             <div className="flex items-center gap-1">
-              <div className="w-3 h-2 rounded-sm bg-white/40" />
-              <div className="w-4 h-2 rounded-sm bg-white/50" />
+              <div className="w-3 h-2 rounded-sm bg-[#31344B]/30" />
+              <div className="w-4 h-2 rounded-sm bg-[#31344B]/40" />
             </div>
           </div>
 
@@ -192,14 +121,14 @@ function PhoneMockup({ mouseX, mouseY }: { mouseX: number; mouseY: number }) {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                  <ChefHat className="w-3.5 h-3.5 text-white" />
+                <div className="w-7 h-7 rounded-lg gradient-mint flex items-center justify-center shadow-neu-sm">
+                  <ChefHat className="w-3.5 h-3.5 text-[#1A2E35]" />
                 </div>
-                <span className="text-white text-xs font-bold">SwiftTray</span>
+                <span className="text-[#31344B] text-xs font-bold">SwiftTray</span>
               </div>
               <div className="relative">
-                <Bell className="w-4 h-4 text-white/60" />
-                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-orange-500" />
+                <Bell className="w-4 h-4 text-[#31344B]/50" />
+                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#FF8A80]" />
               </div>
             </div>
           </motion.div>
@@ -209,28 +138,28 @@ function PhoneMockup({ mouseX, mouseY }: { mouseX: number; mouseY: number }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.5, duration: 0.6 }}
-            className="mx-3 mt-1 rounded-2xl bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/20 p-3 backdrop-blur-sm"
+            className="mx-3 mt-1 rounded-2xl p-3 shadow-[inset_3px_3px_6px_rgba(163,177,198,0.4),inset_-3px_-3px_6px_#FFFFFF]"
           >
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-emerald-400 text-[10px] font-semibold">LIVE TRACKING</span>
+              <div className="w-2 h-2 rounded-full bg-[#68D89B] animate-pulse" />
+              <span className="text-[#68D89B] text-[10px] font-semibold">LIVE TRACKING</span>
             </div>
             <div className="flex items-center justify-between mb-2">
               <div>
-                <p className="text-white text-xs font-bold">Hyderabadi Biryani</p>
-                <p className="text-white/50 text-[10px]">Spice Junction</p>
+                <p className="text-[#31344B] text-xs font-bold">Hyderabadi Biryani</p>
+                <p className="text-[#7B8BA3] text-[10px]">Spice Junction</p>
               </div>
               <div className="text-right">
-                <p className="text-cyan-400 text-xs font-bold tabular-nums">3:42</p>
-                <p className="text-white/40 text-[10px]">ETA left</p>
+                <p className="text-[#5DE5D5] text-xs font-bold tabular-nums">3:42</p>
+                <p className="text-[#7B8BA3] text-[10px]">ETA left</p>
               </div>
             </div>
             {/* Progress Steps */}
             <div className="flex items-center gap-1">
               {["Placed", "Preparing", "Ready"].map((step, i) => (
                 <div key={step} className="flex-1">
-                  <div className={`h-1 rounded-full ${i < 2 ? "bg-gradient-to-r from-indigo-400 to-purple-400" : "bg-white/10"}`} />
-                  <p className={`text-[8px] mt-0.5 ${i < 2 ? "text-indigo-300" : "text-white/30"}`}>{step}</p>
+                  <div className={`h-1.5 rounded-full ${i < 2 ? "gradient-mint" : "shadow-[inset_1px_1px_3px_rgba(163,177,198,0.4),inset_-1px_-1px_3px_#FFFFFF]"}`} />
+                  <p className={`text-[8px] mt-0.5 font-medium ${i < 2 ? "text-[#5DE5D5]" : "text-[#7B8BA3]"}`}>{step}</p>
                 </div>
               ))}
             </div>
@@ -244,8 +173,8 @@ function PhoneMockup({ mouseX, mouseY }: { mouseX: number; mouseY: number }) {
             className="px-3 pt-3"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-white/80 text-[10px] font-semibold">Popular Near You</span>
-              <span className="text-indigo-400 text-[9px]">See all</span>
+              <span className="text-[#31344B]/70 text-[10px] font-semibold">Popular Near You</span>
+              <span className="text-[#5DE5D5] text-[9px] font-medium">See all</span>
             </div>
 
             {/* Mini food cards */}
@@ -260,20 +189,20 @@ function PhoneMockup({ mouseX, mouseY }: { mouseX: number; mouseY: number }) {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 2.2 + i * 0.2, duration: 0.4 }}
-                  className="flex items-center gap-2.5 p-2 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-colors"
+                  className="flex items-center gap-2.5 p-2 rounded-xl shadow-[3px_3px_6px_rgba(163,177,198,0.35),-3px_-3px_6px_#FFFFFF]"
                 >
                   <span className="text-lg">{item.emoji}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-[10px] font-medium truncate">{item.name}</p>
+                    <p className="text-[#31344B] text-[10px] font-medium truncate">{item.name}</p>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-white/40 text-[9px] flex items-center gap-0.5">
-                        <Star className="w-2 h-2 text-amber-400 fill-amber-400" />{item.rating}
+                      <span className="text-[#7B8BA3] text-[9px] flex items-center gap-0.5">
+                        <Star className="w-2 h-2 text-[#F5A623] fill-[#F5A623]" />{item.rating}
                       </span>
-                      <span className="text-white/30 text-[9px]">•</span>
-                      <span className="text-white/40 text-[9px]">{item.time}</span>
+                      <span className="text-[#7B8BA3] text-[9px]">•</span>
+                      <span className="text-[#7B8BA3] text-[9px]">{item.time}</span>
                     </div>
                   </div>
-                  <span className="text-emerald-400 text-[10px] font-bold">{item.price}</span>
+                  <span className="text-[#5DE5D5] text-[10px] font-bold">{item.price}</span>
                 </motion.div>
               ))}
             </div>
@@ -284,7 +213,7 @@ function PhoneMockup({ mouseX, mouseY }: { mouseX: number; mouseY: number }) {
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: [0, 1, 1, 0], y: [20, 0, 0, -10], scale: [0.9, 1, 1, 0.95] }}
             transition={{ delay: 4, duration: 3.5, repeat: Infinity, repeatDelay: 8, times: [0, 0.1, 0.85, 1] }}
-            className="absolute bottom-16 left-3 right-3 rounded-xl bg-gradient-to-r from-emerald-500/90 to-teal-500/90 p-2.5 backdrop-blur-sm flex items-center gap-2 shadow-lg"
+            className="absolute bottom-16 left-3 right-3 rounded-xl gradient-success p-2.5 flex items-center gap-2 shadow-lg"
           >
             <CheckCircle className="w-4 h-4 text-white flex-shrink-0" />
             <div>
@@ -294,7 +223,7 @@ function PhoneMockup({ mouseX, mouseY }: { mouseX: number; mouseY: number }) {
           </motion.div>
 
           {/* Bottom Nav */}
-          <div className="absolute bottom-0 inset-x-0 h-14 bg-[#0a0e1a]/90 backdrop-blur-md border-t border-white/5 flex items-center justify-around px-4">
+          <div className="absolute bottom-0 inset-x-0 h-14 bg-[#E4EBF5] shadow-[0_-3px_8px_rgba(163,177,198,0.3)] flex items-center justify-around px-4">
             {["🏠", "🔍", "🛒", "📋", "👤"].map((icon, i) => (
               <div key={i} className={`text-sm ${i === 0 ? "opacity-100" : "opacity-40"}`}>
                 {icon}
@@ -303,9 +232,6 @@ function PhoneMockup({ mouseX, mouseY }: { mouseX: number; mouseY: number }) {
           </div>
         </div>
       </div>
-
-      {/* Phone Glow Effect */}
-      <div className="absolute -inset-4 rounded-[3rem] bg-gradient-to-b from-indigo-500/10 to-purple-500/10 blur-2xl pointer-events-none" />
     </motion.div>
   );
 }
@@ -314,7 +240,6 @@ function PhoneMockup({ mouseX, mouseY }: { mouseX: number; mouseY: number }) {
    Floating Food Card (orbits around phone)
    ───────────────────────────────────────────── */
 function FloatingFoodCard({ card, index, total }: { card: typeof FOOD_CARDS[0]; index: number; total: number }) {
-  const angle = (360 / total) * index;
   const radius = 200;
   const duration = 25 + index * 3;
 
@@ -333,7 +258,7 @@ function FloatingFoodCard({ card, index, total }: { card: typeof FOOD_CARDS[0]; 
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 1.5 + index * 0.15, type: "spring", stiffness: 200 }}
-          className="glass-card p-2.5 flex items-center gap-2 min-w-[110px] shadow-lg"
+          className="neu-card-static p-2.5 flex items-center gap-2 min-w-[110px]"
           style={{ transform: "rotate(0deg)" }}
         >
           <span className="text-2xl">{card.emoji}</span>
@@ -365,13 +290,13 @@ function LiveActivity() {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 2.5, duration: 0.5 }}
-      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5"
+      className="inline-flex items-center gap-2 px-4 py-2 rounded-full neu-raised-sm"
     >
       <span className="relative flex h-2 w-2">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#68D89B] opacity-75" />
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#68D89B]" />
       </span>
-      <span className="text-xs text-emerald-500 font-medium tabular-nums">
+      <span className="text-xs text-[#68D89B] font-medium tabular-nums">
         <AnimatePresence mode="wait">
           <motion.span
             key={count}
@@ -390,7 +315,7 @@ function LiveActivity() {
 }
 
 /* ─────────────────────────────────────────────
-   HERO SECTION — Main Component
+   HERO SECTION — Neumorphic Main Component
    ───────────────────────────────────────────── */
 export function HeroSection() {
   const [wordIndex, setWordIndex] = useState(0);
@@ -416,46 +341,13 @@ export function HeroSection() {
     <section
       ref={heroRef}
       onMouseMove={handleMouseMove}
-      className="relative min-h-screen flex items-center overflow-hidden grain-overlay hero-grid"
+      className="relative min-h-screen flex items-center overflow-hidden bg-[#E4EBF5]"
     >
-      {/* ── BACKGROUND LAYERS ── */}
-
-      {/* Base gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0a0e1a] via-[#0f1629] to-[#0a0e1a] dark:opacity-100 opacity-0" />
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] via-background to-secondary/[0.03] dark:opacity-0" />
-
-      {/* Glowing Orbs */}
-      <GlowOrb
-        className="top-[10%] left-[15%] opacity-30 dark:opacity-40"
-        color="radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)"
-        size={500}
-      />
-      <GlowOrb
-        className="bottom-[10%] right-[10%] opacity-20 dark:opacity-30"
-        color="radial-gradient(circle, rgba(168,85,247,0.12) 0%, transparent 70%)"
-        size={600}
-      />
-      <GlowOrb
-        className="top-[50%] right-[30%] opacity-15 dark:opacity-25"
-        color="radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%)"
-        size={400}
-      />
-      <GlowOrb
-        className="bottom-[30%] left-[5%] opacity-10 dark:opacity-20"
-        color="radial-gradient(circle, rgba(34,211,238,0.08) 0%, transparent 70%)"
-        size={350}
-      />
-
-      {/* Ambient Fish */}
-      <AmbientFish x={5} y={30} dir={1} delay={0} size={20} />
-      <AmbientFish x={70} y={60} dir={-1} delay={4} size={16} />
-      <AmbientFish x={85} y={20} dir={1} delay={7} size={18} />
-      <AmbientFish x={20} y={75} dir={-1} delay={2} size={14} />
-
-      {/* Bubbles */}
-      {[15, 35, 55, 72, 88, 8, 48, 65].map((x, i) => (
-        <Bubble key={i} x={x} size={20 + i * 8} delay={i * 1.8} />
-      ))}
+      {/* ── DECORATIVE NEUMORPHIC SHAPES ── */}
+      <div className="neu-shape-circle w-[300px] h-[300px] top-[5%] left-[-5%] opacity-40" style={{ animation: "float 12s ease-in-out infinite" }} />
+      <div className="neu-shape-circle w-[200px] h-[200px] bottom-[10%] right-[-3%] opacity-30" style={{ animation: "float 10s ease-in-out infinite 2s" }} />
+      <div className="neu-shape-pill w-[180px] h-[60px] top-[35%] right-[5%] opacity-20 hidden lg:block" style={{ animation: "float 8s ease-in-out infinite 1s" }} />
+      <div className="neu-shape-circle w-[120px] h-[120px] bottom-[25%] left-[8%] opacity-25" style={{ animation: "float 9s ease-in-out infinite 3s" }} />
 
       {/* ── CONTENT ── */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-24 md:pt-32 pb-16">
@@ -512,7 +404,7 @@ export function HeroSection() {
                 <motion.button
                   whileHover={{ scale: 1.04, y: -2 }}
                   whileTap={{ scale: 0.97 }}
-                  className="neon-glow px-7 py-3.5 rounded-2xl gradient-primary text-white font-bold text-base shadow-colored flex items-center gap-2.5 group w-full sm:w-auto justify-center"
+                  className="neon-glow px-7 py-3.5 rounded-2xl neu-btn-primary text-[#1A2E35] font-bold text-base flex items-center gap-2.5 group w-full sm:w-auto justify-center"
                 >
                   <ShoppingBag className="w-4.5 h-4.5" />
                   Order Now
@@ -522,9 +414,9 @@ export function HeroSection() {
               <motion.button
                 whileHover={{ scale: 1.04, y: -2 }}
                 whileTap={{ scale: 0.97 }}
-                className="neon-glow neon-glow-warm px-7 py-3.5 rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm text-foreground font-semibold text-base flex items-center gap-2.5 hover:bg-card/50 transition-colors w-full sm:w-auto justify-center"
+                className="neon-glow neon-glow-warm px-7 py-3.5 rounded-2xl neu-btn text-foreground font-semibold text-base flex items-center gap-2.5 w-full sm:w-auto justify-center"
               >
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center">
+                <div className="w-7 h-7 rounded-full gradient-coral flex items-center justify-center">
                   <Play className="w-3 h-3 text-white ml-0.5" />
                 </div>
                 Watch Demo
@@ -544,10 +436,10 @@ export function HeroSection() {
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 1.2 + i * 0.1, type: "spring", stiffness: 300 }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card/40 backdrop-blur-sm border border-border/30 text-xs font-medium text-foreground/80"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full neu-pill text-xs font-medium text-foreground/80"
                 >
-                  <div className={`w-4 h-4 rounded-full bg-gradient-to-br ${b.color} flex items-center justify-center`}>
-                    <b.icon className="w-2.5 h-2.5 text-white" />
+                  <div className="neu-icon-mint w-5 h-5 rounded-full">
+                    <b.icon className="w-2.5 h-2.5 text-[#1A2E35]" />
                   </div>
                   {b.label}
                 </motion.div>
@@ -557,7 +449,7 @@ export function HeroSection() {
             {/* Trust Stats */}
             <motion.div
               variants={stagger.item}
-              className="flex items-center gap-6 mt-10 pt-8 border-t border-border/30"
+              className="flex items-center gap-6 mt-10 pt-8 border-t border-[#C8D0E0]"
             >
               {TRUST_STATS.map((stat, i) => (
                 <motion.div
@@ -586,44 +478,13 @@ export function HeroSection() {
             transition={{ delay: 0.5, duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="relative flex items-center justify-center min-h-[500px] md:min-h-[600px]"
           >
-            {/* Outer glow ring */}
+            {/* Outer neumorphic rings */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-[420px] h-[420px] md:w-[480px] md:h-[480px] rounded-full border border-primary/[0.08] animate-spin-slow" style={{ animationDuration: "40s" }} />
+              <div className="w-[420px] h-[420px] md:w-[480px] md:h-[480px] rounded-full shadow-[4px_4px_10px_rgba(163,177,198,0.3),-4px_-4px_10px_rgba(255,255,255,0.8)] animate-spin-slow" style={{ animationDuration: "40s" }} />
             </div>
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-[340px] h-[340px] md:w-[380px] md:h-[380px] rounded-full border border-primary/[0.05]" style={{ animation: "spin 60s linear infinite reverse" }} />
+              <div className="w-[340px] h-[340px] md:w-[380px] md:h-[380px] rounded-full shadow-[3px_3px_8px_rgba(163,177,198,0.25),-3px_-3px_8px_rgba(255,255,255,0.7)]" style={{ animation: "spin 60s linear infinite reverse" }} />
             </div>
-
-            {/* Connection Lines (outlet → kitchen → pickup) */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 dark:opacity-30" viewBox="0 0 500 600">
-              <defs>
-                <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="rgba(99,102,241,0.4)" />
-                  <stop offset="50%" stopColor="rgba(168,85,247,0.3)" />
-                  <stop offset="100%" stopColor="rgba(34,211,238,0.2)" />
-                </linearGradient>
-              </defs>
-              <motion.path
-                d="M 100 120 Q 250 200 250 300 Q 250 400 400 480"
-                fill="none"
-                stroke="url(#lineGrad)"
-                strokeWidth="1.5"
-                strokeDasharray="8 6"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ delay: 2, duration: 3, ease: "easeInOut" }}
-              />
-              {/* Animated dot along path */}
-              <motion.circle
-                r="3"
-                fill="#818cf8"
-                animate={{
-                  cx: [100, 250, 250, 400],
-                  cy: [120, 200, 400, 480],
-                }}
-                transition={{ delay: 3, duration: 4, repeat: Infinity, ease: "linear" }}
-              />
-            </svg>
 
             {/* Connection labels */}
             <motion.div
@@ -633,8 +494,8 @@ export function HeroSection() {
               className="absolute pointer-events-none"
               style={{ top: "14%", left: "10%" }}
             >
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card/60 backdrop-blur-sm border border-border/30 text-[9px] font-medium text-muted-foreground">
-                <MapPin className="w-2.5 h-2.5 text-cyan-400" />
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full neu-raised-sm text-[9px] font-medium text-muted-foreground">
+                <MapPin className="w-2.5 h-2.5 text-[#5DE5D5]" />
                 Outlet
               </div>
             </motion.div>
@@ -645,8 +506,8 @@ export function HeroSection() {
               className="absolute pointer-events-none"
               style={{ top: "48%", right: "5%" }}
             >
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card/60 backdrop-blur-sm border border-border/30 text-[9px] font-medium text-muted-foreground">
-                <ChefHat className="w-2.5 h-2.5 text-orange-400" />
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full neu-raised-sm text-[9px] font-medium text-muted-foreground">
+                <ChefHat className="w-2.5 h-2.5 text-[#F5A623]" />
                 Kitchen
               </div>
             </motion.div>
@@ -657,8 +518,8 @@ export function HeroSection() {
               className="absolute pointer-events-none"
               style={{ bottom: "10%", right: "8%" }}
             >
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card/60 backdrop-blur-sm border border-border/30 text-[9px] font-medium text-muted-foreground">
-                <CheckCircle className="w-2.5 h-2.5 text-emerald-400" />
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full neu-raised-sm text-[9px] font-medium text-muted-foreground">
+                <CheckCircle className="w-2.5 h-2.5 text-[#68D89B]" />
                 Pickup
               </div>
             </motion.div>
@@ -683,10 +544,10 @@ export function HeroSection() {
               initial={{ opacity: 0, x: 60, y: 20 }}
               animate={{ opacity: 1, x: 0, y: 0 }}
               transition={{ delay: 2.8, type: "spring", stiffness: 150 }}
-              className="absolute -right-4 md:right-0 bottom-[25%] glass-card p-3 shadow-xl hidden md:flex items-center gap-2.5"
+              className="absolute -right-4 md:right-0 bottom-[25%] neu-card-static p-3 hidden md:flex items-center gap-2.5"
             >
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                <ShoppingBag className="w-4 h-4 text-white" />
+              <div className="neu-icon-mint w-9 h-9 rounded-xl">
+                <ShoppingBag className="w-4 h-4 text-[#1A2E35]" />
               </div>
               <div>
                 <p className="text-[10px] font-bold">3 items in cart</p>
@@ -699,15 +560,15 @@ export function HeroSection() {
               initial={{ opacity: 0, x: -40, y: -20 }}
               animate={{ opacity: 1, x: 0, y: 0 }}
               transition={{ delay: 2.5, type: "spring", stiffness: 150 }}
-              className="absolute -left-4 md:left-0 top-[30%] glass-card p-2.5 shadow-xl hidden md:flex items-center gap-2"
+              className="absolute -left-4 md:left-0 top-[30%] neu-card-static p-2.5 hidden md:flex items-center gap-2"
             >
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
-                <Clock className="w-3.5 h-3.5 text-white" />
+              <div className="neu-icon w-8 h-8 rounded-lg">
+                <Clock className="w-3.5 h-3.5 text-[#5B9BD5]" />
               </div>
               <div>
                 <p className="text-[10px] font-bold">Ready in</p>
                 <motion.p
-                  className="text-xs text-cyan-500 font-bold tabular-nums"
+                  className="text-xs text-primary font-bold tabular-nums"
                   animate={{ opacity: [1, 0.5, 1] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 >
@@ -720,7 +581,7 @@ export function HeroSection() {
       </div>
 
       {/* Bottom Gradient Fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent z-[5]" />
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#E4EBF5] to-transparent z-[5]" />
     </section>
   );
 }

@@ -29,24 +29,22 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 const CART_STORAGE_KEY = "swifttray-cart";
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [cart, setCart] = useState<CartState>({
-    items: [],
-    outletId: null,
-    outletName: null,
-  });
+  const [cart, setCart] = useState<CartState>(() => {
+    if (typeof window === "undefined") {
+      return { items: [], outletId: null, outletName: null };
+    }
 
-  // Load cart from localStorage on mount
-  useEffect(() => {
     try {
-      const saved = localStorage.getItem(CART_STORAGE_KEY);
+      const saved = window.localStorage.getItem(CART_STORAGE_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved);
-        setCart(parsed);
+        return JSON.parse(saved) as CartState;
       }
     } catch {
       // ignore parse errors
     }
-  }, []);
+
+    return { items: [], outletId: null, outletName: null };
+  });
 
   // Save cart to localStorage on change
   useEffect(() => {

@@ -17,12 +17,12 @@ const VENDOR_NAV = [
 
 export default function VendorLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#E4EBF5]">
       <DashboardSidebar
         title="SwiftTray"
         subtitle="Vendor Portal"
         items={VENDOR_NAV}
-        accentColor="from-indigo-500 to-purple-500"
+        accentColor="from-[#F5A623] to-[#E8961C]"
       />
       <main className="lg:pl-[260px] pt-4 pb-20 lg:pb-8 px-4 lg:px-8">
         <div className="max-w-7xl mx-auto">

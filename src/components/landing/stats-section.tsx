@@ -54,10 +54,10 @@ export function StatsSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ delay: i * 0.1, duration: 0.5 }}
-                className="glass-card p-6 text-center"
+                className="neu-card p-6 text-center"
               >
-                <div className="w-12 h-12 rounded-2xl gradient-primary mx-auto mb-4 flex items-center justify-center shadow-colored">
-                  <Icon className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 rounded-2xl neu-icon-mint mx-auto mb-4">
+                  <Icon className="w-6 h-6 text-[#1A2E35]" />
                 </div>
                 <div className="text-3xl md:text-4xl font-extrabold gradient-text mb-1">
                   <AnimatedCounter value={stat.value} suffix={stat.suffix} />

@@ -1,13 +1,16 @@
 "use client";
 
+import { useQuery } from "convex/react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import { Star, Clock, MapPin, ArrowRight } from "lucide-react";
-import { MOCK_OUTLETS } from "@/lib/mock-data";
+import { api } from "@convex/_generated/api";
+import type { Outlet } from "@/types";
 
 export function FeaturedOutlets() {
-  const featured = MOCK_OUTLETS.filter((o) => o.isOpen).slice(0, 4);
+  const featured =
+    (useQuery(api.outlets.getFeatured, {}) as Outlet[] | undefined) ?? [];
 
   return (
     <section className="section-padding relative">
@@ -46,25 +49,25 @@ export function FeaturedOutlets() {
               transition={{ delay: i * 0.1 }}
             >
               <Link href={`/outlets/${outlet.slug}`}>
-                <div className="glass-card overflow-hidden group cursor-pointer">
-                  <div className="relative h-40 overflow-hidden">
+                <div className="neu-card overflow-hidden group cursor-pointer">
+                  <div className="relative h-40 overflow-hidden rounded-t-xl">
                     <Image
                       src={outlet.image}
                       alt={outlet.name}
                       fill
                       className="object-cover group-hover:scale-110 transition-transform duration-500"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
 
                     {/* Rating Badge */}
-                    <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-full bg-white/90 dark:bg-black/60 backdrop-blur-sm text-xs font-semibold">
+                    <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-full bg-white/90 text-xs font-semibold shadow-sm">
                       <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
                       {outlet.rating}
                     </div>
 
                     {/* Open Badge */}
                     <div className="absolute bottom-3 left-3">
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/90 text-white text-xs font-medium">
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#68D89B]/90 text-white text-xs font-medium">
                         <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                         Open Now
                       </div>
@@ -89,7 +92,7 @@ export function FeaturedOutlets() {
                       {outlet.tags.slice(0, 3).map((tag) => (
                         <span
                           key={tag}
-                          className="px-2 py-0.5 rounded-full bg-primary/5 text-primary text-[10px] font-medium"
+                          className="px-2 py-0.5 rounded-full text-[10px] font-medium neu-pill text-primary"
                         >
                           {tag}
                         </span>
@@ -106,7 +109,7 @@ export function FeaturedOutlets() {
         <div className="md:hidden flex justify-center mt-8">
           <Link
             href="/outlets"
-            className="flex items-center gap-2 px-6 py-2.5 rounded-full border border-border text-sm font-medium hover:bg-secondary transition-colors"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-full neu-btn text-sm font-medium"
           >
             View all outlets <ArrowRight className="w-4 h-4" />
           </Link>

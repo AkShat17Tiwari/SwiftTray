@@ -27,7 +27,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-[60] bg-black/30 backdrop-blur-sm"
           />
 
           {/* Drawer */}
@@ -36,13 +36,13 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed right-0 top-0 bottom-0 z-[70] w-full max-w-md bg-background border-l border-border flex flex-col"
+            className="fixed right-0 top-0 bottom-0 z-[70] w-full max-w-md bg-[#E4EBF5] shadow-[-8px_0_20px_rgba(163,177,198,0.5)] flex flex-col"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-border">
+            <div className="flex items-center justify-between p-4 border-b border-[#C8D0E0]">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-                  <ShoppingBag className="w-5 h-5 text-white" />
+                <div className="neu-icon-mint w-10 h-10 rounded-xl">
+                  <ShoppingBag className="w-5 h-5 text-[#1A2E35]" />
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold">Your Cart</h2>
@@ -55,9 +55,9 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
               </div>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-secondary transition-colors"
+                className="w-8 h-8 rounded-full neu-btn flex items-center justify-center"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -65,7 +65,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             <div className="flex-1 overflow-y-auto">
               {items.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full gap-4 p-8">
-                  <div className="w-24 h-24 rounded-full bg-secondary flex items-center justify-center">
+                  <div className="w-24 h-24 rounded-full neu-pressed flex items-center justify-center">
                     <ShoppingBag className="w-10 h-10 text-muted-foreground" />
                   </div>
                   <h3 className="text-lg font-semibold text-center">
@@ -77,7 +77,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                   <Link
                     href="/outlets"
                     onClick={onClose}
-                    className="px-6 py-2.5 rounded-full gradient-primary text-white text-sm font-medium shadow-colored"
+                    className="px-6 py-2.5 rounded-full neu-btn-primary text-sm font-bold"
                   >
                     Browse Outlets
                   </Link>
@@ -92,9 +92,9 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8, x: 100 }}
-                        className="glass-card p-3 flex gap-3"
+                        className="neu-card-static p-3 flex gap-3"
                       >
-                        <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+                        <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 shadow-neu-sm">
                           <Image
                             src={item.image}
                             alt={item.name}
@@ -124,7 +124,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                   item.quantity
                               )}
                             </span>
-                            <div className="flex items-center gap-2">
+                            <div className="neu-stepper">
                               <button
                                 onClick={() =>
                                   updateQuantity(
@@ -132,7 +132,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                     item.quantity - 1
                                   )
                                 }
-                                className="w-7 h-7 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors"
+                                className="neu-stepper-btn w-7 h-7"
                               >
                                 <Minus className="w-3 h-3" />
                               </button>
@@ -146,7 +146,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                                     item.quantity + 1
                                   )
                                 }
-                                className="w-7 h-7 rounded-full gradient-primary text-white flex items-center justify-center"
+                                className="neu-stepper-btn w-7 h-7 gradient-mint text-[#1A2E35]"
                               >
                                 <Plus className="w-3 h-3" />
                               </button>
@@ -176,7 +176,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
             {/* Footer */}
             {items.length > 0 && (
-              <div className="border-t border-border p-4 space-y-3">
+              <div className="border-t border-[#C8D0E0] p-4 space-y-3">
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">
@@ -188,7 +188,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                     <span className="text-muted-foreground">Taxes (5%)</span>
                     <span className="font-medium">{formatPrice(tax)}</span>
                   </div>
-                  <div className="flex justify-between text-base font-bold pt-1.5 border-t border-border">
+                  <div className="flex justify-between text-base font-bold pt-1.5 border-t border-[#C8D0E0]">
                     <span>Total</span>
                     <span className="gradient-text">{formatPrice(total)}</span>
                   </div>
@@ -198,7 +198,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full py-3.5 rounded-2xl gradient-primary text-white font-semibold shadow-colored flex items-center justify-center gap-2"
+                    className="w-full py-3.5 rounded-2xl neu-btn-primary text-[#1A2E35] font-bold flex items-center justify-center gap-2"
                   >
                     Proceed to Checkout
                     <ArrowRight className="w-4 h-4" />

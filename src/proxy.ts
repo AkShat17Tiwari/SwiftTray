@@ -66,9 +66,6 @@ async function verifyCookie(cookieValue: string, expectedPrefix: string): Promis
 }
 
 export default clerkMiddleware(async (auth, req) => {
-  const { sessionClaims, userId } = await auth();
-  const role = sessionClaims?.metadata?.role || "student";
-
   // ------------------------------------------------------------------
   // Portal API routes — require Clerk auth but NOT portal cookies
   // ------------------------------------------------------------------
@@ -76,31 +73,28 @@ export default clerkMiddleware(async (auth, req) => {
     return; // Let the API route handlers do their own validation
   }
 
+  const needsAuth = isAdminRoute(req) || isVendorRoute(req) || isStudentRoute(req);
+
+  if (!needsAuth) {
+    return;
+  }
+
+  const { sessionClaims, userId } = await auth();
+  const role = sessionClaims?.metadata?.role || "student";
+
   // ------------------------------------------------------------------
   // ADMIN ROUTES
   // ------------------------------------------------------------------
   if (isAdminRoute(req)) {
-    // Step 1: Clerk auth
-    if (!userId) {
-      return NextResponse.redirect(new URL("/sign-in", req.url));
-    }
-
-    // Step 2: RBAC role check
-    if (role !== "admin" && role !== "super_admin") {
-      return NextResponse.redirect(new URL("/sign-in", req.url));
-    }
-
-    // Step 3: Allow access gate page without cookie
+    // Admin uses a dedicated owner credential gate.
     if (isAdminAccessPage(req)) {
-      // If already verified, redirect to admin dashboard
       const adminCookie = req.cookies.get("swifttray_admin_access")?.value;
       if (adminCookie && await verifyCookie(adminCookie, "admin:")) {
         return NextResponse.redirect(new URL("/admin", req.url));
       }
-      return; // Show access gate
+      return;
     }
 
-    // Step 4: Verify portal access cookie for all other admin routes
     const adminCookie = req.cookies.get("swifttray_admin_access")?.value;
     if (!adminCookie || !(await verifyCookie(adminCookie, "admin:"))) {
       return NextResponse.redirect(new URL("/admin/access", req.url));

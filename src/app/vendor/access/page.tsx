@@ -15,13 +15,10 @@ export default function VendorAccessPage() {
       return { success: false, error: "Not authenticated" };
     }
 
-    // Step 1: Validate key against Convex via a lightweight fetch
-    // For now we validate through the API route which sets the session cookie
-    // In production, this would call Convex first, then the cookie API
     const res = await fetch("/api/portal/vendor-verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key, vendorUserId, outletId: "pending" }),
+      body: JSON.stringify({ key, vendorUserId }),
     });
 
     const data = await res.json();

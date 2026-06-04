@@ -23,10 +23,8 @@ interface PortalConfig {
   desc: string;
   href: string;
   icon: typeof Users;
-  gradient: string;
-  glowColor: string;
-  borderGlow: string;
-  bgGlow: string;
+  accentBg: string;
+  accentColor: string;
   allowedRoles: AppRole[];
   requiresAccessKey: boolean;
 }
@@ -38,10 +36,8 @@ const PORTALS: PortalConfig[] = [
     desc: "Order & Track",
     href: "/student/dashboard",
     icon: Users,
-    gradient: "from-cyan-500 to-blue-500",
-    glowColor: "rgba(34,211,238,0.25)",
-    borderGlow: "from-cyan-400 to-blue-500",
-    bgGlow: "rgba(34,211,238,0.06)",
+    accentBg: "gradient-mint",
+    accentColor: "#5DE5D5",
     allowedRoles: ["student", "admin", "super_admin"],
     requiresAccessKey: false,
   },
@@ -51,10 +47,8 @@ const PORTALS: PortalConfig[] = [
     desc: "Manage Outlet",
     href: "/vendor/dashboard",
     icon: Store,
-    gradient: "from-orange-500 to-amber-500",
-    glowColor: "rgba(249,115,22,0.25)",
-    borderGlow: "from-orange-400 to-amber-500",
-    bgGlow: "rgba(249,115,22,0.06)",
+    accentBg: "gradient-warning",
+    accentColor: "#F5A623",
     allowedRoles: ["vendor", "admin", "super_admin"],
     requiresAccessKey: false,
   },
@@ -64,10 +58,8 @@ const PORTALS: PortalConfig[] = [
     desc: "Control Center",
     href: "/admin/access",
     icon: Shield,
-    gradient: "from-purple-500 to-indigo-500",
-    glowColor: "rgba(168,85,247,0.25)",
-    borderGlow: "from-purple-400 to-indigo-500",
-    bgGlow: "rgba(168,85,247,0.06)",
+    accentBg: "gradient-coral",
+    accentColor: "#FF8A80",
     allowedRoles: ["admin", "super_admin"],
     requiresAccessKey: true,
   },
@@ -83,7 +75,7 @@ interface Ripple {
 }
 
 /* ─────────────────────────────────────────────
-   Single Portal Card
+   Single Portal Card — Neumorphic
    ───────────────────────────────────────────── */
 function PortalCard({ portal }: { portal: PortalConfig }) {
   const router = useRouter();
@@ -105,13 +97,11 @@ function PortalCard({ portal }: { portal: PortalConfig }) {
     async (e: React.MouseEvent<HTMLDivElement>) => {
       addRipple(e);
 
-      // Wait for Clerk to load
       if (!isLoaded) {
         toast.info("Loading authentication...", { duration: 2000 });
         return;
       }
 
-      // Not signed in → open Clerk sign-in
       if (!isSignedIn) {
         toast.info(`Sign in to access the ${portal.label} Portal`, {
           duration: 3000,
@@ -123,10 +113,9 @@ function PortalCard({ portal }: { portal: PortalConfig }) {
         return;
       }
 
-      // Role check
       let hasAccess = false;
       if (portal.key === "student") {
-        hasAccess = true; // all authenticated users can access student dashboard
+        hasAccess = true;
       } else if (portal.key === "vendor") {
         hasAccess = hasVendorAccess;
       } else if (portal.key === "admin") {
@@ -141,7 +130,6 @@ function PortalCard({ portal }: { portal: PortalConfig }) {
         return;
       }
 
-      // Proceed with navigation
       setIsLoading(true);
       try {
         router.push(portal.href);
@@ -172,25 +160,8 @@ function PortalCard({ portal }: { portal: PortalConfig }) {
           handleClick(e as unknown as React.MouseEvent<HTMLDivElement>);
         }
       }}
-      className="relative group cursor-pointer select-none overflow-hidden rounded-2xl border border-white/[0.08] backdrop-blur-md p-4 sm:p-5 text-center transition-all duration-300"
-      style={{
-        background: `linear-gradient(135deg, ${portal.bgGlow} 0%, rgba(255,255,255,0.02) 100%)`,
-        boxShadow: `0 0 0px ${portal.glowColor}`,
-      }}
+      className="relative group cursor-pointer select-none overflow-hidden rounded-2xl p-4 sm:p-5 text-center neu-card"
     >
-      {/* Hover glow border */}
-      <div
-        className={`absolute -inset-[1px] rounded-2xl bg-gradient-to-br ${portal.borderGlow} opacity-0 group-hover:opacity-[0.15] transition-opacity duration-300 pointer-events-none`}
-      />
-
-      {/* Hover ambient glow */}
-      <div
-        className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-        style={{
-          boxShadow: `0 0 40px ${portal.glowColor}, inset 0 0 30px ${portal.bgGlow}`,
-        }}
-      />
-
       {/* Ripple effects */}
       {ripples.map((ripple) => (
         <span
@@ -201,8 +172,8 @@ function PortalCard({ portal }: { portal: PortalConfig }) {
             top: ripple.y - 10,
             width: 20,
             height: 20,
-            background: portal.glowColor,
-            opacity: 0.4,
+            background: portal.accentColor,
+            opacity: 0.3,
           }}
         />
       ))}
@@ -210,12 +181,12 @@ function PortalCard({ portal }: { portal: PortalConfig }) {
       {/* Icon */}
       <div className="relative z-10">
         <div
-          className={`mx-auto w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${portal.gradient} flex items-center justify-center mb-2.5 shadow-lg group-hover:shadow-xl transition-shadow duration-300`}
+          className={`mx-auto w-11 h-11 sm:w-12 sm:h-12 rounded-xl ${portal.accentBg} flex items-center justify-center mb-2.5 shadow-neu-sm`}
         >
           {isLoading ? (
-            <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-white animate-spin" />
+            <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-[#1A2E35] animate-spin" />
           ) : (
-            <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-[#1A2E35]" />
           )}
         </div>
 
@@ -228,8 +199,8 @@ function PortalCard({ portal }: { portal: PortalConfig }) {
 
       {/* Security badge for admin */}
       {portal.requiresAccessKey && (
-        <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20">
-          <span className="text-[8px] font-semibold text-purple-400">KEY</span>
+        <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full bg-[#FF8A80]/10 shadow-neu-inset-sm">
+          <span className="text-[8px] font-semibold text-[#FF8A80]">KEY</span>
         </div>
       )}
     </motion.div>

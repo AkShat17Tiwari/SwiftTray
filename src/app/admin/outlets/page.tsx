@@ -1,16 +1,34 @@
 "use client";
 
+import { useMutation, useQuery } from "convex/react";
 import { motion } from "framer-motion";
-import { Store, MapPin, Star, Clock, MoreHorizontal, Power, Edit2, Eye } from "lucide-react";
-import { MOCK_OUTLETS } from "@/lib/mock-data";
+import { Store, MapPin, Star, Clock, Power, Edit2, Eye } from "lucide-react";
+import { api } from "@convex/_generated/api";
+import { toast } from "sonner";
+import type { Outlet } from "@/types";
+import type { Id } from "@convex/_generated/dataModel";
+
+type AdminOutlet = Outlet & { _id: Id<"outlets"> };
 
 export default function AdminOutletsPage() {
+  const outlets = useQuery(api.outlets.list, {}) as AdminOutlet[] | undefined;
+  const toggleAvailability = useMutation(api.outlets.toggleAvailability);
+
+  const handleToggle = async (outletId: Id<"outlets">) => {
+    try {
+      await toggleAvailability({ outletId });
+      toast.success("Outlet availability updated");
+    } catch {
+      toast.error("Could not update outlet");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-extrabold">All <span className="gradient-text">Outlets</span></h1>
-          <p className="text-sm text-muted-foreground">{MOCK_OUTLETS.length} outlets registered on platform</p>
+          <p className="text-sm text-muted-foreground">{outlets?.length ?? 0} outlets registered on platform</p>
         </div>
         <button className="px-4 py-2.5 rounded-xl gradient-primary text-white text-sm font-semibold shadow-colored flex items-center gap-2">
           <Store className="w-4 h-4" /> Add Outlet
@@ -27,7 +45,12 @@ export default function AdminOutletsPage() {
           <span className="col-span-2 text-center">Status</span>
           <span className="col-span-2 text-right">Actions</span>
         </div>
-        {MOCK_OUTLETS.map((outlet, i) => (
+        {outlets === undefined && (
+          <div className="px-4 py-12 text-center text-sm text-muted-foreground">
+            Loading live outlets...
+          </div>
+        )}
+        {outlets?.map((outlet, i) => (
           <motion.div
             key={outlet._id}
             initial={{ opacity: 0 }}
@@ -74,7 +97,11 @@ export default function AdminOutletsPage() {
               <button className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" title="Edit">
                 <Edit2 className="w-4 h-4" />
               </button>
-              <button className="p-1.5 rounded-lg text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 transition-colors" title="Toggle Status">
+              <button
+                onClick={() => handleToggle(outlet._id)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 transition-colors"
+                title="Toggle Status"
+              >
                 <Power className="w-4 h-4" />
               </button>
             </div>

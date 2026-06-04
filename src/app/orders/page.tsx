@@ -1,25 +1,35 @@
 "use client";
 
 import { useState } from "react";
+import { useUser } from "@clerk/nextjs";
+import { useQuery } from "convex/react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import {
   ClipboardList, ChevronRight, Package, RefreshCw, Clock,
 } from "lucide-react";
-import { MOCK_ORDERS } from "@/lib/mock-data";
+import { api } from "@convex/_generated/api";
 import { formatPrice, formatDate, getOrderStatusLabel, getOrderStatusColor } from "@/lib/utils";
 import { Navbar } from "@/components/layout/navbar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { Footer } from "@/components/layout/footer";
+import type { Order } from "@/types";
 
 export default function OrdersPage() {
   const [tab, setTab] = useState<"active" | "past">("active");
+  const { user } = useUser();
+  const liveOrders = useQuery(
+    api.orders.getMyOrders,
+    user?.id ? { userId: user.id } : "skip"
+  ) as Order[] | undefined;
+  const allOrders = liveOrders ?? [];
+  const isLoading = liveOrders === undefined;
 
-  const activeOrders = MOCK_ORDERS.filter(
+  const activeOrders = allOrders.filter(
     (o) => !["picked_up", "cancelled"].includes(o.status)
   );
-  const pastOrders = MOCK_ORDERS.filter(
+  const pastOrders = allOrders.filter(
     (o) => ["picked_up", "cancelled"].includes(o.status)
   );
   const orders = tab === "active" ? activeOrders : pastOrders;
@@ -63,7 +73,12 @@ export default function OrdersPage() {
 
           {/* Orders */}
           <div className="space-y-4">
-            {orders.map((order, i) => (
+            {isLoading ? (
+              <div className="flex items-center justify-center py-20 text-muted-foreground">
+                <Clock className="w-5 h-5 animate-pulse mr-2" />
+                Loading live orders...
+              </div>
+            ) : orders.map((order, i) => (
               <motion.div
                 key={order._id}
                 initial={{ opacity: 0, y: 20 }}
@@ -141,7 +156,7 @@ export default function OrdersPage() {
               </motion.div>
             ))}
 
-            {orders.length === 0 && (
+            {!isLoading && orders.length === 0 && (
               <div className="text-center py-20">
                 <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
                   <Package className="w-8 h-8 text-muted-foreground" />

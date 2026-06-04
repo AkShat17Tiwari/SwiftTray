@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
+import { useMutation, useQuery } from "convex/react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -8,20 +9,28 @@ import {
   ArrowLeft, Clock, MapPin, CheckCircle, Circle, Package,
   RefreshCw, Phone, Copy, ChevronRight,
 } from "lucide-react";
-import { MOCK_ORDERS } from "@/lib/mock-data";
+import { api } from "@convex/_generated/api";
 import { ORDER_STATUSES } from "@/lib/constants";
 import { formatPrice, formatDate, formatTime, getOrderStatusLabel, getOrderStatusColor } from "@/lib/utils";
 import { Navbar } from "@/components/layout/navbar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { toast } from "sonner";
+import type { Order } from "@/types";
+import type { Id } from "@convex/_generated/dataModel";
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const order = MOCK_ORDERS.find((o) => o._id === id) ?? MOCK_ORDERS[0];
+  const canLoadOrder = !id.startsWith("order_");
+  const liveOrderId = canLoadOrder ? (id as Id<"orders">) : null;
+  const order = useQuery(api.orders.getById, liveOrderId ? { id: liveOrderId } : "skip") as
+    | Order
+    | null
+    | undefined;
+  const cancelOrder = useMutation(api.orders.cancel);
   const [eta, setEta] = useState<number>(0);
 
   useEffect(() => {
-    if (order.estimatedReadyTime) {
+    if (order?.estimatedReadyTime) {
       const updateEta = () => {
         const diff = Math.max(0, order.estimatedReadyTime! - Date.now());
         setEta(diff);
@@ -30,7 +39,38 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       const timer = setInterval(updateEta, 1000);
       return () => clearInterval(timer);
     }
-  }, [order.estimatedReadyTime]);
+  }, [order?.estimatedReadyTime]);
+
+  if (!canLoadOrder || order === null) {
+    return (
+      <>
+        <Navbar />
+        <main className="flex-1 pt-20 flex items-center justify-center">
+          <div className="text-center">
+            <Package className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
+            <h1 className="text-2xl font-bold mb-2">Order not found</h1>
+            <Link href="/orders" className="text-primary">
+              Back to orders
+            </Link>
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  if (order === undefined) {
+    return (
+      <>
+        <Navbar />
+        <main className="flex-1 pt-20 flex items-center justify-center">
+          <div className="text-center text-muted-foreground">
+            <Clock className="w-8 h-8 mx-auto mb-3 animate-pulse" />
+            <p className="text-sm">Loading live order...</p>
+          </div>
+        </main>
+      </>
+    );
+  }
 
   const etaMinutes = Math.floor(eta / 60000);
   const etaSeconds = Math.floor((eta % 60000) / 1000);
@@ -42,6 +82,15 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const copyToken = () => {
     navigator.clipboard.writeText(order.pickupToken);
     toast.success("Token copied!");
+  };
+
+  const handleCancel = async () => {
+    try {
+      await cancelOrder({ orderId: order._id as Id<"orders"> });
+      toast.success("Order cancelled");
+    } catch {
+      toast.error("Could not cancel this order");
+    }
   };
 
   return (
@@ -61,7 +110,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="glass-card p-6 text-center"
+            className="neu-card-static p-6 text-center"
           >
             <motion.div
               initial={{ scale: 0 }}
@@ -69,8 +118,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               transition={{ type: "spring", stiffness: 200 }}
               className={`w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center text-3xl ${
                 order.status === "ready"
-                  ? "gradient-success shadow-xl"
-                  : "gradient-primary shadow-colored"
+                  ? "gradient-success shadow-colored"
+                  : "gradient-mint shadow-neu-sm"
               }`}
             >
               {ORDER_STATUSES[currentStepIndex]?.icon}
@@ -85,7 +134,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
             {/* ETA */}
             {eta > 0 && order.status !== "ready" && order.status !== "picked_up" && (
-              <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary">
+              <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full neu-pressed-sm text-primary">
                 <Clock className="w-4 h-4" />
                 <span className="text-sm font-bold tabular-nums">
                   {etaMinutes}:{etaSeconds.toString().padStart(2, "0")}
@@ -100,8 +149,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className={`glass-card p-6 text-center ${
-                order.status === "ready" ? "gradient-border" : ""
+              className={`neu-card-static p-6 text-center ${
+                order.status === "ready" ? "border-2 border-primary" : ""
               }`}
             >
               <p className="text-xs text-muted-foreground mb-1">
@@ -113,7 +162,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 </p>
                 <button
                   onClick={copyToken}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors"
+                  className="w-8 h-8 rounded-lg neu-btn flex items-center justify-center"
                 >
                   <Copy className="w-4 h-4 text-muted-foreground" />
                 </button>
@@ -129,7 +178,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="glass-card p-6"
+            className="neu-card-static p-6"
           >
             <h2 className="text-sm font-bold mb-5">Order Timeline</h2>
             <div className="space-y-0">
@@ -150,8 +199,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                         transition={{ delay: i * 0.1 }}
                         className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                           isCompleted
-                            ? "gradient-primary text-white shadow-colored"
-                            : "bg-secondary text-muted-foreground"
+                            ? "gradient-mint text-[#1A2E35] shadow-neu-sm"
+                            : "neu-pressed-sm text-muted-foreground"
                         } ${isCurrent ? "ring-4 ring-primary/20" : ""}`}
                       >
                         {isCompleted ? (
@@ -165,7 +214,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                           className={`w-0.5 h-12 ${
                             i < currentStepIndex
                               ? "bg-primary"
-                              : "bg-secondary"
+                              : "bg-[#C8D0E0]"
                           }`}
                         />
                       )}
@@ -202,12 +251,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="glass-card p-5"
+            className="neu-card-static p-5"
           >
             <h2 className="text-sm font-bold mb-4">Order Details</h2>
 
-            <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border">
-              <div className="relative w-10 h-10 rounded-lg overflow-hidden">
+            <div className="flex items-center gap-3 mb-4 pb-4 border-b border-[#C8D0E0]">
+              <div className="relative w-10 h-10 rounded-lg overflow-hidden shadow-neu-sm">
                 <Image
                   src={order.outletImage}
                   alt={order.outletName}
@@ -246,7 +295,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             </div>
 
             {/* Price Breakdown */}
-            <div className="pt-3 border-t border-border space-y-1.5">
+            <div className="pt-3 border-t border-[#C8D0E0] space-y-1.5">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
                 <span>{formatPrice(order.subtotal)}</span>
@@ -256,12 +305,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 <span>{formatPrice(order.tax)}</span>
               </div>
               {order.discount > 0 && (
-                <div className="flex justify-between text-sm text-emerald-500">
+                <div className="flex justify-between text-sm text-[#68D89B]">
                   <span>Discount</span>
                   <span>-{formatPrice(order.discount)}</span>
                 </div>
               )}
-              <div className="flex justify-between font-bold pt-2 border-t border-border">
+              <div className="flex justify-between font-bold pt-2 border-t border-[#C8D0E0]">
                 <span>Total</span>
                 <span className="gradient-text">
                   {formatPrice(order.totalAmount)}
@@ -277,14 +326,17 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full py-3 rounded-xl gradient-primary text-white font-semibold shadow-colored flex items-center justify-center gap-2"
+                  className="w-full py-3 rounded-xl neu-btn-primary text-[#1A2E35] font-semibold flex items-center justify-center gap-2"
                 >
                   <RefreshCw className="w-4 h-4" /> Reorder
                 </motion.button>
               </Link>
             )}
             {(order.status === "placed" || order.status === "accepted") && (
-              <button className="flex-1 py-3 rounded-xl border border-destructive/30 text-destructive font-medium hover:bg-destructive/5 transition-colors">
+              <button
+                onClick={handleCancel}
+                className="flex-1 py-3 rounded-xl neu-btn text-destructive font-medium"
+              >
                 Cancel Order
               </button>
             )}

@@ -67,13 +67,13 @@ export function calculateTax(subtotal: number, rate: number = 0.05): number {
 
 export function getOrderStatusColor(status: string): string {
   switch (status) {
-    case "placed": return "bg-blue-500/10 text-blue-500 border-blue-500/20";
-    case "accepted": return "bg-indigo-500/10 text-indigo-500 border-indigo-500/20";
-    case "preparing": return "bg-amber-500/10 text-amber-500 border-amber-500/20";
-    case "ready": return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
-    case "picked_up": return "bg-slate-500/10 text-slate-500 border-slate-500/20";
-    case "cancelled": return "bg-red-500/10 text-red-500 border-red-500/20";
-    default: return "bg-slate-500/10 text-slate-500 border-slate-500/20";
+    case "placed": return "bg-[#5B9BD5]/10 text-[#5B9BD5] border-[#5B9BD5]/20";
+    case "accepted": return "bg-[#5DE5D5]/10 text-[#5DE5D5] border-[#5DE5D5]/20";
+    case "preparing": return "bg-[#F5A623]/10 text-[#F5A623] border-[#F5A623]/20";
+    case "ready": return "bg-[#68D89B]/10 text-[#68D89B] border-[#68D89B]/20";
+    case "picked_up": return "bg-[#7B8BA3]/10 text-[#7B8BA3] border-[#7B8BA3]/20";
+    case "cancelled": return "bg-[#E85D75]/10 text-[#E85D75] border-[#E85D75]/20";
+    default: return "bg-[#7B8BA3]/10 text-[#7B8BA3] border-[#7B8BA3]/20";
   }
 }
 

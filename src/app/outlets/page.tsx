@@ -1,21 +1,32 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation, useQuery } from "convex/react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, Star, Clock, MapPin, Filter, SlidersHorizontal } from "lucide-react";
-import { MOCK_OUTLETS } from "@/lib/mock-data";
+import { Search, Star, Clock, MapPin, Filter, SlidersHorizontal, Database, Loader2 } from "lucide-react";
+import { api } from "@convex/_generated/api";
 import { Navbar } from "@/components/layout/navbar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { Footer } from "@/components/layout/footer";
+import { toast } from "sonner";
+import type { Outlet } from "@/types";
 
 export default function OutletsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortBy, setSortBy] = useState<"rating" | "prepTime" | "name">("rating");
+  const [isSeeding, setIsSeeding] = useState(false);
+  const liveOutlets = useQuery(api.outlets.list, {
+    search: searchQuery || undefined,
+  }) as Outlet[] | undefined;
+  const seedDemo = useMutation(api.seed.demo);
 
-  const filtered = MOCK_OUTLETS
+  const outlets = liveOutlets ?? [];
+  const isLoading = liveOutlets === undefined;
+
+  const filtered = outlets
     .filter((o) =>
       o.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       o.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -25,6 +36,18 @@ export default function OutletsPage() {
       if (sortBy === "prepTime") return a.avgPrepTime - b.avgPrepTime;
       return a.name.localeCompare(b.name);
     });
+
+  const handleSeedDemo = async () => {
+    try {
+      setIsSeeding(true);
+      const result = await seedDemo();
+      toast.success(result.message);
+    } catch {
+      toast.error("Could not seed demo data");
+    } finally {
+      setIsSeeding(false);
+    }
+  };
 
   return (
     <>
@@ -41,7 +64,7 @@ export default function OutletsPage() {
               All <span className="gradient-text">Outlets</span>
             </h1>
             <p className="text-muted-foreground">
-              Browse {MOCK_OUTLETS.length} campus food outlets
+              Browse {outlets.length} campus food outlets
             </p>
           </motion.div>
 
@@ -102,7 +125,13 @@ export default function OutletsPage() {
           </motion.div>
 
           {/* Outlets Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20 text-muted-foreground">
+              <Loader2 className="w-5 h-5 animate-spin mr-2" />
+              Loading live outlets...
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((outlet, i) => (
               <motion.div
                 key={outlet._id}
@@ -187,17 +216,36 @@ export default function OutletsPage() {
                 </Link>
               </motion.div>
             ))}
-          </div>
+            </div>
+          )}
 
-          {filtered.length === 0 && (
+          {!isLoading && filtered.length === 0 && (
             <div className="text-center py-20">
               <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
-                <Filter className="w-8 h-8 text-muted-foreground" />
+                {searchQuery ? (
+                  <Filter className="w-8 h-8 text-muted-foreground" />
+                ) : (
+                  <Database className="w-8 h-8 text-muted-foreground" />
+                )}
               </div>
-              <h3 className="text-lg font-semibold mb-1">No outlets found</h3>
+              <h3 className="text-lg font-semibold mb-1">
+                {searchQuery ? "No outlets found" : "No live outlets yet"}
+              </h3>
               <p className="text-sm text-muted-foreground">
-                Try a different search term
+                {searchQuery
+                  ? "Try a different search term"
+                  : "Seed the Convex database to start browsing real records."}
               </p>
+              {!searchQuery && (
+                <button
+                  onClick={handleSeedDemo}
+                  disabled={isSeeding}
+                  className="mt-5 px-5 py-2.5 rounded-xl neu-btn-primary text-[#1A2E35] text-sm font-semibold inline-flex items-center gap-2 disabled:opacity-70"
+                >
+                  {isSeeding && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Seed demo data
+                </button>
+              )}
             </div>
           )}
         </div>

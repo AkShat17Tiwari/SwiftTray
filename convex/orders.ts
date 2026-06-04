@@ -83,6 +83,32 @@ export const getMyOrders = query({
   },
 });
 
+export const list = query({
+  args: {
+    status: v.optional(
+      v.union(
+        v.literal("placed"),
+        v.literal("accepted"),
+        v.literal("preparing"),
+        v.literal("ready"),
+        v.literal("picked_up"),
+        v.literal("cancelled")
+      )
+    ),
+  },
+  handler: async (ctx, args) => {
+    if (args.status) {
+      return await ctx.db
+        .query("orders")
+        .withIndex("by_status", (q) => q.eq("status", args.status!))
+        .order("desc")
+        .collect();
+    }
+
+    return await ctx.db.query("orders").order("desc").collect();
+  },
+});
+
 export const getById = query({
   args: { id: v.id("orders") },
   handler: async (ctx, args) => {

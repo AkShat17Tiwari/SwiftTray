@@ -12,18 +12,17 @@ export function CtaSection() {
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          className="relative rounded-3xl overflow-hidden"
+          className="relative rounded-3xl overflow-hidden neu-card-static"
         >
-          {/* Background */}
-          <div className="absolute inset-0 gradient-primary" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(0,0,0,0.1),transparent_60%)]" />
+          {/* Background — neumorphic surface with mint gradient overlay */}
+          <div className="absolute inset-0 gradient-mint opacity-90" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.25),transparent_60%)]" />
 
-          {/* Floating elements */}
+          {/* Floating emojis */}
           {["🍕", "🍜", "☕", "🧁"].map((emoji, i) => (
             <motion.span
               key={i}
-              className="absolute text-3xl opacity-20 select-none"
+              className="absolute text-3xl opacity-15 select-none"
               style={{
                 left: `${15 + i * 22}%`,
                 top: `${20 + (i % 2) * 40}%`,
@@ -51,16 +50,16 @@ export function CtaSection() {
               viewport={{ once: true }}
               className="flex items-center justify-center gap-2 mb-6"
             >
-              <Sparkles className="w-5 h-5 text-white/80" />
-              <span className="text-white/80 text-sm font-medium">
+              <Sparkles className="w-5 h-5 text-[#1A2E35]/70" />
+              <span className="text-[#1A2E35]/70 text-sm font-medium">
                 Join 15,000+ students
               </span>
             </motion.div>
 
-            <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-4">
+            <h2 className="text-3xl md:text-5xl font-extrabold text-[#1A2E35] mb-4">
               Ready to Skip the Queue?
             </h2>
-            <p className="text-lg text-white/70 max-w-xl mx-auto mb-8">
+            <p className="text-lg text-[#1A2E35]/60 max-w-xl mx-auto mb-8">
               Start ordering from your favorite campus outlets in seconds.
               No more waiting. No more hassle.
             </p>
@@ -70,7 +69,7 @@ export function CtaSection() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 rounded-2xl bg-white text-primary font-bold text-lg shadow-xl flex items-center gap-2 group"
+                  className="px-8 py-4 rounded-2xl bg-[#E4EBF5] text-[#31344B] font-bold text-lg shadow-[6px_6px_14px_rgba(60,160,150,0.3),-6px_-6px_14px_rgba(120,255,240,0.4)] flex items-center gap-2 group"
                 >
                   Get Started Free
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -80,7 +79,7 @@ export function CtaSection() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 rounded-2xl border-2 border-white/30 text-white font-semibold text-lg hover:bg-white/10 transition-colors"
+                  className="px-8 py-4 rounded-2xl border-2 border-[#1A2E35]/20 text-[#1A2E35] font-semibold text-lg hover:bg-[#1A2E35]/5 transition-colors"
                 >
                   Register as Vendor
                 </motion.button>

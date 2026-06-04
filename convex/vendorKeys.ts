@@ -46,10 +46,17 @@ export const generateKey = mutation({
       return { key: existingVendorKey.key, alreadyExists: true };
     }
 
+    const outletId =
+      args.outletId ?? (await ctx.db.query("outlets").first())?._id;
+
+    if (!outletId) {
+      throw new Error("Create an outlet before generating a vendor key");
+    }
+
     // Insert new key
     await ctx.db.insert("vendorPortalKeys", {
       vendorUserId: args.vendorUserId,
-      outletId: args.outletId || ("placeholder" as any),
+      outletId,
       key,
       isActive: true,
       lastUsedAt: Date.now(),

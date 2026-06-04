@@ -9,9 +9,6 @@ const ICONS = { "search": Search, "shopping-cart": ShoppingCart, "clock": Clock,
 export function HowItWorks() {
   return (
     <section className="section-padding relative">
-      {/* Background Decoration */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent" />
-
       <div className="max-w-5xl mx-auto relative">
         {/* Header */}
         <motion.div
@@ -30,8 +27,8 @@ export function HowItWorks() {
 
         {/* Steps */}
         <div className="relative grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-4">
-          {/* Connecting Line (desktop) */}
-          <div className="hidden md:block absolute top-12 left-[12%] right-[12%] h-0.5 bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20" />
+          {/* Connecting Line (desktop) — neumorphic embossed */}
+          <div className="hidden md:block absolute top-12 left-[12%] right-[12%] h-1 rounded-full shadow-[inset_1px_1px_3px_rgba(163,177,198,0.5),inset_-1px_-1px_3px_#FFFFFF]" />
 
           {HOW_IT_WORKS.map((step, i) => {
             const Icon = ICONS[step.icon as keyof typeof ICONS];
@@ -46,14 +43,13 @@ export function HowItWorks() {
               >
                 {/* Step Number Circle */}
                 <motion.div
-                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  whileHover={{ scale: 1.08, rotate: 3 }}
                   className="relative w-24 h-24 mx-auto mb-6"
                 >
-                  <div className="absolute inset-0 rounded-3xl gradient-primary opacity-10 blur-xl" />
-                  <div className="relative w-full h-full rounded-3xl gradient-primary flex items-center justify-center shadow-colored">
-                    <Icon className="w-10 h-10 text-white" />
+                  <div className="relative w-full h-full rounded-3xl neu-icon-mint shadow-mint-glow">
+                    <Icon className="w-10 h-10 text-[#1A2E35]" />
                   </div>
-                  <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-background border-2 border-primary flex items-center justify-center text-sm font-bold text-primary">
+                  <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full neu-raised flex items-center justify-center text-sm font-bold text-primary">
                     {step.step}
                   </div>
                 </motion.div>

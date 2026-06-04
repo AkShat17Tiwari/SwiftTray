@@ -1,16 +1,21 @@
 "use client";
 
 import { useRef } from "react";
+import { useQuery } from "convex/react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { Plus, Star, Clock, ArrowRight, ArrowLeft } from "lucide-react";
-import { getTrendingItems } from "@/lib/mock-data";
-import { getOutletById } from "@/lib/mock-data";
+import { api } from "@convex/_generated/api";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/hooks/use-cart";
+import type { MenuItem, Outlet } from "@/types";
 
 export function TopMealsCarousel() {
-  const trending = getTrendingItems(8);
+  const trending =
+    (useQuery(api.menuItems.getTrending, { limit: 8 }) as
+      | MenuItem[]
+      | undefined) ?? [];
+  const outlets = (useQuery(api.outlets.list, {}) as Outlet[] | undefined) ?? [];
   const scrollRef = useRef<HTMLDivElement>(null);
   const { addItem } = useCart();
 
@@ -42,13 +47,13 @@ export function TopMealsCarousel() {
           <div className="hidden md:flex items-center gap-2">
             <button
               onClick={() => scroll("left")}
-              className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors"
+              className="w-10 h-10 rounded-full neu-btn flex items-center justify-center"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
             <button
               onClick={() => scroll("right")}
-              className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors"
+              className="w-10 h-10 rounded-full neu-btn flex items-center justify-center"
             >
               <ArrowRight className="w-4 h-4" />
             </button>
@@ -61,7 +66,8 @@ export function TopMealsCarousel() {
           className="flex gap-5 overflow-x-auto hide-scrollbar pb-4 snap-x snap-mandatory"
         >
           {trending.map((item, i) => {
-            const outlet = getOutletById(item.outletId);
+            const outlet = outlets.find((o) => o._id === item.outletId);
+            const rating = (4 + (item.orderCount % 10) / 10).toFixed(1);
             return (
               <motion.div
                 key={item._id}
@@ -71,8 +77,8 @@ export function TopMealsCarousel() {
                 transition={{ delay: i * 0.08 }}
                 className="flex-shrink-0 w-[280px] snap-center"
               >
-                <div className="glass-card overflow-hidden group">
-                  <div className="relative h-44 overflow-hidden">
+                <div className="neu-card overflow-hidden group">
+                  <div className="relative h-44 overflow-hidden rounded-t-xl">
                     <Image
                       src={item.image}
                       alt={item.name}
@@ -108,14 +114,14 @@ export function TopMealsCarousel() {
                           );
                         }
                       }}
-                      className="absolute bottom-3 right-3 w-10 h-10 rounded-full gradient-primary text-white flex items-center justify-center shadow-colored opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute bottom-3 right-3 w-10 h-10 rounded-full gradient-mint text-[#1A2E35] flex items-center justify-center shadow-mint-glow opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <Plus className="w-5 h-5" />
                     </motion.button>
 
                     {/* Tags */}
                     {item.tags.includes("Bestseller") && (
-                      <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full gradient-warm text-white text-[10px] font-bold uppercase tracking-wide">
+                      <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full gradient-coral text-white text-[10px] font-bold uppercase tracking-wide">
                         🔥 Bestseller
                       </div>
                     )}
@@ -135,7 +141,7 @@ export function TopMealsCarousel() {
                       </span>
                       <span className="flex items-center gap-1">
                         <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                        {(4 + Math.random()).toFixed(1)}
+                        {rating}
                       </span>
                       {item.nutrition?.calories && (
                         <span>{item.nutrition.calories} cal</span>
