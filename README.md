@@ -5,7 +5,13 @@ SwiftTray is a campus food pre-ordering application built with Next.js, Convex, 
 ## Local setup
 
 1. Install dependencies with `npm install`.
-2. Copy `.env.example` to `.env.local` and add the public Convex values printed by `npx convex dev`.
+2. Create `.env.local` with your Convex and site URLs:
+
+   ```bash
+   NEXT_PUBLIC_CONVEX_URL=https://<your-deployment>.convex.cloud
+   NEXT_PUBLIC_CONVEX_SITE_URL=https://<your-deployment>.convex.site
+   NEXT_PUBLIC_SITE_URL=http://localhost:3000
+   ```
 3. Create the authentication settings in Convex:
 
    ```bash
