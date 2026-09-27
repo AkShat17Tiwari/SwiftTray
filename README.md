@@ -10,13 +10,27 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![Razorpay](https://img.shields.io/badge/Razorpay-Integrated-0C2340?style=for-the-badge&logo=razorpay&logoColor=3395FF)](https://razorpay.com/)
+[![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-black?style=for-the-badge&logo=vercel)](https://swifttray.vercel.app)
 [![Tests](https://img.shields.io/badge/Tests-Vitest_Passing-22c55e?style=for-the-badge&logo=vitest&logoColor=white)](https://vitest.dev/)
 
 <p align="center">
   Skip the lines. SwiftTray bridges students, campus food outlets, and university administrators through live menus, zero-trust server-priced checkout, instant Razorpay payments, and real-time reactive order tracking.
 </p>
 
+<p align="center">
+  <a href="https://swifttray.vercel.app" target="_blank">
+    <img src="https://img.shields.io/badge/🌐_Live_Deployment-swifttray.vercel.app-0070F3?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Deployment" />
+  </a>
+</p>
+
 </div>
+
+---
+
+## 🌐 Live Deployment
+
+> **Production Application**: [https://swifttray.vercel.app](https://swifttray.vercel.app)  
+> Experience the live platform with reactive campus menus, student checkout, and role-based portal access.
 
 ---
 
