@@ -14,9 +14,13 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
     throw new Error("SITE_URL is required for authentication");
   }
 
+  const trustedOrigins = Array.from(
+    new Set([siteUrl, "http://localhost:3000", "https://swifttray.vercel.app"])
+  );
+
   return betterAuth({
     baseURL: siteUrl,
-    trustedOrigins: [siteUrl],
+    trustedOrigins,
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,
