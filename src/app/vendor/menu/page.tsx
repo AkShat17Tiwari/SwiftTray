@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
 import { motion } from "framer-motion";
 import { Plus, Search, Edit2, Trash2 } from "lucide-react";
@@ -16,17 +15,19 @@ type VendorMenuItem = MenuItem & { _id: Id<"menuItems"> };
 
 export default function VendorMenuPage() {
   const [search, setSearch] = useState("");
-  const { user } = useUser();
   const workspace = useQuery(
     api.dashboards.vendorWorkspace,
-    user?.id ? { vendorUserId: user.id } : "skip"
+    {}
   ) as { outlet: VendorOutlet } | null | undefined;
   const outlet = workspace?.outlet ?? null;
   const liveItems = useQuery(
-    api.menuItems.listByOutlet,
+    api.menuItems.listForManagement,
     outlet ? { outletId: outlet._id } : "skip"
   ) as VendorMenuItem[] | undefined;
   const toggleAvailability = useMutation(api.menuItems.toggleAvailability);
+  const createItem = useMutation(api.menuItems.create);
+  const updateItem = useMutation(api.menuItems.update);
+  const removeItem = useMutation(api.menuItems.remove);
   const outletItems = liveItems ?? [];
   const isLoading =
     workspace === undefined || (outlet !== null && liveItems === undefined);
@@ -42,6 +43,48 @@ export default function VendorMenuPage() {
       toast.success("Availability updated");
     } catch {
       toast.error("Could not update item");
+    }
+  };
+
+  const handleAdd = async () => {
+    if (!outlet) return;
+    const name = window.prompt("Item name")?.trim();
+    if (!name) return;
+    const description = window.prompt("Description")?.trim();
+    if (!description) return;
+    const category = window.prompt("Category", "Main course")?.trim();
+    const image = window.prompt("Image URL", outlet.image)?.trim();
+    const price = Number(window.prompt("Price in rupees", "100"));
+    const prepTime = Number(window.prompt("Preparation time in minutes", "10"));
+    if (!category || !image || !Number.isFinite(price) || !Number.isFinite(prepTime)) return;
+    try {
+      await createItem({ outletId: outlet._id, name, description, category, image, price, prepTime, tags: [] });
+      toast.success("Menu item added");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not add item");
+    }
+  };
+
+  const handleEdit = async (item: VendorMenuItem) => {
+    const name = window.prompt("Item name", item.name)?.trim();
+    if (!name) return;
+    const price = Number(window.prompt("Price in rupees", String(item.price)));
+    if (!Number.isFinite(price)) return;
+    try {
+      await updateItem({ id: item._id, name, price });
+      toast.success("Menu item updated");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update item");
+    }
+  };
+
+  const handleRemove = async (item: VendorMenuItem) => {
+    if (!window.confirm(`Delete ${item.name}? This cannot be undone.`)) return;
+    try {
+      await removeItem({ id: item._id });
+      toast.success("Menu item deleted");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not delete item");
     }
   };
 
@@ -61,7 +104,7 @@ export default function VendorMenuPage() {
             {outlet?.name ?? "No outlet selected"} • {outletItems.length} items across {categories.length} categories
           </p>
         </div>
-        <button className="px-4 py-2.5 rounded-xl gradient-primary text-white text-sm font-semibold shadow-colored flex items-center gap-2">
+        <button type="button" disabled={!outlet} onClick={handleAdd} className="min-h-11 px-4 rounded-xl gradient-primary text-white text-sm font-semibold shadow-colored flex items-center gap-2 disabled:opacity-50">
           <Plus className="w-4 h-4" /> Add Item
         </button>
       </motion.div>
@@ -87,7 +130,7 @@ export default function VendorMenuPage() {
 
       {!isLoading && !outlet && (
         <div className="py-16 text-center text-sm text-muted-foreground">
-          Verify a vendor key before managing your menu.
+          Request vendor access before managing your menu.
         </div>
       )}
 
@@ -109,6 +152,7 @@ export default function VendorMenuPage() {
                   className="glass-card p-4 flex items-center gap-4"
                 >
                   <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- vendor-supplied URLs from arbitrary hosts */}
                     <img src={item.image} alt={item.name} className="object-cover w-full h-full" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -127,7 +171,9 @@ export default function VendorMenuPage() {
                   <div className="flex items-center gap-3">
                     {/* Availability toggle */}
                     <button
+                      type="button"
                       onClick={() => handleToggle(item._id)}
+                      aria-label={`${item.isAvailable ? "Mark" : "Restore"} ${item.name} ${item.isAvailable ? "unavailable" : "available"}`}
                       className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${
                         item.isAvailable ? "bg-emerald-500" : "bg-muted"
                       }`}
@@ -138,10 +184,10 @@ export default function VendorMenuPage() {
                         }`}
                       />
                     </button>
-                    <button className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                    <button type="button" onClick={() => handleEdit(item)} aria-label={`Edit ${item.name}`} className="min-w-10 min-h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors flex items-center justify-center">
                       <Edit2 className="w-4 h-4" />
                     </button>
-                    <button className="p-2 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors">
+                    <button type="button" onClick={() => handleRemove(item)} aria-label={`Delete ${item.name}`} className="min-w-10 min-h-10 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors flex items-center justify-center">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>

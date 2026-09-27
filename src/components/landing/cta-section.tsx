@@ -52,7 +52,7 @@ export function CtaSection() {
             >
               <Sparkles className="w-5 h-5 text-[#1A2E35]/70" />
               <span className="text-[#1A2E35]/70 text-sm font-medium">
-                Join 15,000+ students
+                Built for secure campus ordering
               </span>
             </motion.div>
 
@@ -65,24 +65,12 @@ export function CtaSection() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/student/dashboard">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 rounded-2xl bg-[#E4EBF5] text-[#31344B] font-bold text-lg shadow-[6px_6px_14px_rgba(60,160,150,0.3),-6px_-6px_14px_rgba(120,255,240,0.4)] flex items-center gap-2 group"
-                >
+              <Link href="/student/dashboard" className="min-h-14 px-8 rounded-2xl bg-[#E4EBF5] text-[#31344B] font-bold text-lg shadow-[6px_6px_14px_rgba(60,160,150,0.3),-6px_-6px_14px_rgba(120,255,240,0.4)] flex items-center gap-2 group">
                   Get Started Free
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </motion.button>
               </Link>
-              <Link href="/admin">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 rounded-2xl border-2 border-[#1A2E35]/20 text-[#1A2E35] font-semibold text-lg hover:bg-[#1A2E35]/5 transition-colors"
-                >
+              <Link href="/vendor/access" className="min-h-14 px-8 rounded-2xl border-2 border-[#1A2E35]/20 text-[#1A2E35] font-semibold text-lg hover:bg-[#1A2E35]/5 transition-colors flex items-center">
                   Register as Vendor
-                </motion.button>
               </Link>
             </div>
           </div>

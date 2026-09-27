@@ -17,7 +17,7 @@ export type NotificationType = "order_update" | "promo" | "system";
 
 export interface User {
   _id: string;
-  clerkId: string;
+  authUserId: string;
   name: string;
   email: string;
   phone?: string;

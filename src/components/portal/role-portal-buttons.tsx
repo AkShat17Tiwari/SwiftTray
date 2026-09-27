@@ -3,8 +3,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { useClerk } from "@clerk/nextjs";
-import { useAuthRole, type AppRole } from "@/hooks/use-auth-role";
+import { useAuthRole } from "@/hooks/use-auth-role";
 import { toast } from "sonner";
 import {
   Users,
@@ -25,8 +24,6 @@ interface PortalConfig {
   icon: typeof Users;
   accentBg: string;
   accentColor: string;
-  allowedRoles: AppRole[];
-  requiresAccessKey: boolean;
 }
 
 const PORTALS: PortalConfig[] = [
@@ -38,8 +35,6 @@ const PORTALS: PortalConfig[] = [
     icon: Users,
     accentBg: "gradient-mint",
     accentColor: "#5DE5D5",
-    allowedRoles: ["student", "admin", "super_admin"],
-    requiresAccessKey: false,
   },
   {
     key: "vendor",
@@ -49,19 +44,15 @@ const PORTALS: PortalConfig[] = [
     icon: Store,
     accentBg: "gradient-warning",
     accentColor: "#F5A623",
-    allowedRoles: ["vendor", "admin", "super_admin"],
-    requiresAccessKey: false,
   },
   {
     key: "admin",
     label: "Admin",
     desc: "Control Center",
-    href: "/admin/access",
+    href: "/admin",
     icon: Shield,
     accentBg: "gradient-coral",
     accentColor: "#FF8A80",
-    allowedRoles: ["admin", "super_admin"],
-    requiresAccessKey: true,
   },
 ];
 
@@ -79,7 +70,6 @@ interface Ripple {
    ───────────────────────────────────────────── */
 function PortalCard({ portal }: { portal: PortalConfig }) {
   const router = useRouter();
-  const { openSignIn } = useClerk();
   const { isLoaded, isSignedIn, role, hasAdminAccess, hasVendorAccess } = useAuthRole();
   const [isLoading, setIsLoading] = useState(false);
   const [ripples, setRipples] = useState<Ripple[]>([]);
@@ -107,9 +97,7 @@ function PortalCard({ portal }: { portal: PortalConfig }) {
           duration: 3000,
           icon: <portal.icon className="w-4 h-4" />,
         });
-        openSignIn({
-          fallbackRedirectUrl: portal.href,
-        });
+        router.push(`/sign-in/${portal.key}?next=${encodeURIComponent(portal.href)}`);
         return;
       }
 
@@ -138,7 +126,7 @@ function PortalCard({ portal }: { portal: PortalConfig }) {
         setIsLoading(false);
       }
     },
-    [isLoaded, isSignedIn, role, hasAdminAccess, hasVendorAccess, portal, router, openSignIn, addRipple]
+    [isLoaded, isSignedIn, role, hasAdminAccess, hasVendorAccess, portal, router, addRipple]
   );
 
   const Icon = portal.icon;
@@ -197,12 +185,6 @@ function PortalCard({ portal }: { portal: PortalConfig }) {
         <ArrowRight className="w-3.5 h-3.5 text-muted-foreground mx-auto mt-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200" />
       </div>
 
-      {/* Security badge for admin */}
-      {portal.requiresAccessKey && (
-        <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full bg-[#FF8A80]/10 shadow-neu-inset-sm">
-          <span className="text-[8px] font-semibold text-[#FF8A80]">KEY</span>
-        </div>
-      )}
     </motion.div>
   );
 }

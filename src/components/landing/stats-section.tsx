@@ -1,75 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { motion, useInView } from "framer-motion";
-import { STATS } from "@/lib/constants";
-import { UtensilsCrossed, Building2, Clock, Users } from "lucide-react";
-
-const ICONS = [UtensilsCrossed, Building2, Clock, Users];
-
-function AnimatedCounter({ value, suffix, duration = 2 }: { value: number; suffix: string; duration?: number }) {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  useEffect(() => {
-    if (!isInView) return;
-
-    let start = 0;
-    const end = value;
-    const stepTime = (duration * 1000) / end;
-    const increment = Math.max(1, Math.floor(end / 60));
-
-    const timer = setInterval(() => {
-      start += increment;
-      if (start >= end) {
-        setCount(end);
-        clearInterval(timer);
-      } else {
-        setCount(start);
-      }
-    }, stepTime * increment);
-
-    return () => clearInterval(timer);
-  }, [isInView, value, duration]);
-
-  return (
-    <span ref={ref} className="tabular-nums">
-      {count.toLocaleString()}{suffix}
-    </span>
-  );
-}
+import { useQuery } from "convex/react";
+import { motion } from "framer-motion";
+import { Building2, Clock, ShieldCheck, UtensilsCrossed } from "lucide-react";
+import { api } from "@convex/_generated/api";
 
 export function StatsSection() {
-  return (
-    <section className="section-padding relative">
-      <div className="max-w-5xl mx-auto">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-          {STATS.map((stat, i) => {
-            const Icon = ICONS[i];
-            return (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ delay: i * 0.1, duration: 0.5 }}
-                className="neu-card p-6 text-center"
-              >
-                <div className="w-12 h-12 rounded-2xl neu-icon-mint mx-auto mb-4">
-                  <Icon className="w-6 h-6 text-[#1A2E35]" />
-                </div>
-                <div className="text-3xl md:text-4xl font-extrabold gradient-text mb-1">
-                  <AnimatedCounter value={stat.value} suffix={stat.suffix} />
-                </div>
-                <p className="text-sm text-muted-foreground font-medium">
-                  {stat.label}
-                </p>
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
+  const outlets = useQuery(api.outlets.list, {});
+  const features = [
+    { label: "Active outlets", value: outlets === undefined ? "…" : String(outlets.length), icon: Building2 },
+    { label: "Menus update live", value: "Live", icon: UtensilsCrossed },
+    { label: "Order status tracking", value: "Real-time", icon: Clock },
+    { label: "Server-verified payments", value: "Secure", icon: ShieldCheck },
+  ];
+  return <section className="section-padding relative"><div className="max-w-5xl mx-auto"><div className="grid grid-cols-2 md:grid-cols-4 gap-6">{features.map((feature, index) => <motion.div key={feature.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.08 }} className="neu-card p-6 text-center"><div className="w-12 h-12 rounded-2xl neu-icon-mint mx-auto mb-4"><feature.icon className="w-6 h-6"/></div><p className="text-2xl font-extrabold gradient-text">{feature.value}</p><p className="text-sm text-muted-foreground font-medium mt-1">{feature.label}</p></motion.div>)}</div></div></section>;
 }

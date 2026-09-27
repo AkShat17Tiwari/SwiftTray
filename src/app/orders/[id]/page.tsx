@@ -6,12 +6,12 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  ArrowLeft, Clock, MapPin, CheckCircle, Circle, Package,
-  RefreshCw, Phone, Copy, ChevronRight,
+  ArrowLeft, Clock, CheckCircle, Circle, Package,
+  RefreshCw, Copy,
 } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import { ORDER_STATUSES } from "@/lib/constants";
-import { formatPrice, formatDate, formatTime, getOrderStatusLabel, getOrderStatusColor } from "@/lib/utils";
+import { formatPrice, formatTime, getOrderStatusLabel } from "@/lib/utils";
 import { Navbar } from "@/components/layout/navbar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { toast } from "sonner";
@@ -261,6 +261,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   src={order.outletImage}
                   alt={order.outletName}
                   fill
+                  sizes="48px"
                   className="object-cover"
                 />
               </div>
@@ -322,14 +323,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           {/* Actions */}
           <div className="flex gap-3 pb-4">
             {order.status === "picked_up" && (
-              <Link href="/outlets" className="flex-1">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full py-3 rounded-xl neu-btn-primary text-[#1A2E35] font-semibold flex items-center justify-center gap-2"
-                >
+              <Link
+                href="/outlets"
+                className="flex-1 py-3 rounded-xl neu-btn-primary text-[#1A2E35] font-semibold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              >
                   <RefreshCw className="w-4 h-4" /> Reorder
-                </motion.button>
               </Link>
             )}
             {(order.status === "placed" || order.status === "accepted") && (

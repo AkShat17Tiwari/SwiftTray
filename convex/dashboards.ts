@@ -1,5 +1,5 @@
 import { query } from "./_generated/server";
-import { v } from "convex/values";
+import { requireAdmin, requireRole } from "./lib/auth";
 
 const PLATFORM_COMMISSION_RATE = 0.1;
 
@@ -12,16 +12,17 @@ function isToday(timestamp: number) {
 export const adminOverview = query({
   args: {},
   handler: async (ctx) => {
-    const [orders, outlets, users, vendorKeys, assignments] = await Promise.all([
+    await requireAdmin(ctx);
+    const [orders, outlets, users, assignments] = await Promise.all([
       ctx.db.query("orders").collect(),
       ctx.db.query("outlets").collect(),
       ctx.db.query("users").collect(),
-      ctx.db.query("vendorPortalKeys").collect(),
       ctx.db.query("vendorAssignments").collect(),
     ]);
 
-    const todaysOrders = orders.filter((order) => isToday(order._creationTime));
-    const platformRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+    const paidOrders = orders.filter((order) => order.paymentStatus === "completed");
+    const todaysOrders = paidOrders.filter((order) => isToday(order._creationTime));
+    const platformRevenue = paidOrders.reduce((sum, order) => sum + order.totalAmount, 0);
     const todaysRevenue = todaysOrders.reduce((sum, order) => sum + order.totalAmount, 0);
     const cancelledOrders = orders.filter((order) => order.status === "cancelled");
     const activeStudents = users.filter(
@@ -30,7 +31,7 @@ export const adminOverview = query({
 
     const outletMetrics = outlets
       .map((outlet) => {
-        const outletOrders = orders.filter((order) => order.outletId === outlet._id);
+        const outletOrders = paidOrders.filter((order) => order.outletId === outlet._id);
         const sales = outletOrders.reduce((sum, order) => sum + order.totalAmount, 0);
         const commissionRate = outlet.commissionRate ?? PLATFORM_COMMISSION_RATE * 100;
 
@@ -48,7 +49,6 @@ export const adminOverview = query({
           commissionRate,
           vendorEmail:
             outlet.contactEmail ??
-            vendorKeys.find((key) => key.outletId === outlet._id)?.vendorUserId ??
             outlet.vendorId ??
             "Unassigned",
         };
@@ -102,26 +102,10 @@ export const adminOverview = query({
 });
 
 export const vendorWorkspace = query({
-  args: { vendorUserId: v.string() },
-  handler: async (ctx, args) => {
-    const activeKey = await ctx.db
-      .query("vendorPortalKeys")
-      .withIndex("by_vendorUserId", (q) => q.eq("vendorUserId", args.vendorUserId))
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .first();
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.vendorUserId))
-      .unique();
-
-    const assignment = await ctx.db
-      .query("vendorAssignments")
-      .withIndex("by_userId", (q) => q.eq("userId", args.vendorUserId))
-      .filter((q) => q.eq(q.field("status"), "approved"))
-      .first();
-
-    const outletId = activeKey?.outletId ?? user?.assignedOutletId ?? assignment?.outletId;
+  args: {},
+  handler: async (ctx) => {
+    const current = await requireRole(ctx, ["vendor", "admin", "super_admin"]);
+    const outletId = current.profile.assignedOutletId;
     if (!outletId) return null;
 
     const outlet = await ctx.db.get(outletId);
@@ -140,17 +124,22 @@ export const vendorWorkspace = query({
     ]);
 
     const todaysOrders = orders.filter((order) => isToday(order._creationTime));
-    const revenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
-    const todaysRevenue = todaysOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+    const paidOrders = orders.filter((order) => order.paymentStatus === "completed");
+    const revenue = paidOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+    const todaysRevenue = todaysOrders
+      .filter((order) => order.paymentStatus === "completed")
+      .reduce((sum, order) => sum + order.totalAmount, 0);
     const activeOrders = orders.filter(
-      (order) => !["picked_up", "cancelled"].includes(order.status)
+      (order) =>
+        order.paymentStatus === "completed" &&
+        !["picked_up", "cancelled"].includes(order.status)
     );
-    const uniqueCustomers = new Set(orders.map((order) => order.userId)).size;
-    const avgOrderValue = orders.length > 0 ? Math.round(revenue / orders.length) : 0;
+    const uniqueCustomers = new Set(paidOrders.map((order) => order.userId)).size;
+    const avgOrderValue = paidOrders.length > 0 ? Math.round(revenue / paidOrders.length) : 0;
 
     const topItems = menuItems
       .map((item) => {
-        const orderedQuantity = orders.reduce((sum, order) => {
+        const orderedQuantity = paidOrders.reduce((sum, order) => {
           const quantity = order.items
             .filter((orderItem) => orderItem.menuItemId === item._id)
             .reduce((itemSum, orderItem) => itemSum + orderItem.quantity, 0);

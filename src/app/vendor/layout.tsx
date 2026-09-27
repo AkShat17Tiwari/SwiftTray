@@ -5,6 +5,8 @@ import {
   LayoutDashboard, ShoppingBag, UtensilsCrossed, BarChart3,
   Package, Settings,
 } from "lucide-react";
+import { RoleGuard } from "@/components/auth/role-guard";
+import { usePathname } from "next/navigation";
 
 const VENDOR_NAV = [
   { label: "Overview", href: "/vendor", icon: LayoutDashboard },
@@ -16,8 +18,11 @@ const VENDOR_NAV = [
 ];
 
 export default function VendorLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  if (pathname === "/vendor/access") return children;
   return (
-    <div className="min-h-screen bg-[#E4EBF5]">
+    <RoleGuard allowed={["vendor", "admin", "super_admin"]} fallback="/vendor/access">
+      <div className="min-h-screen bg-background text-foreground">
       <DashboardSidebar
         title="SwiftTray"
         subtitle="Vendor Portal"
@@ -29,6 +34,7 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
           {children}
         </div>
       </main>
-    </div>
+      </div>
+    </RoleGuard>
   );
 }

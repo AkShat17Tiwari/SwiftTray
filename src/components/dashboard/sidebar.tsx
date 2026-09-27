@@ -5,10 +5,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, LogOut, UserRound,
 } from "lucide-react";
-import { UserButton } from "@clerk/nextjs";
 import type { LucideIcon } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
+import { useAuthRole } from "@/hooks/use-auth-role";
+import { useRouter } from "next/navigation";
+import { useMutation } from "convex/react";
+import { api } from "@convex/_generated/api";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 export interface SidebarItem {
   label: string;
@@ -27,6 +32,16 @@ interface SidebarProps {
 export function DashboardSidebar({ title, subtitle, items, accentColor = "from-[#5DE5D5] to-[#6EC6C8]" }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const { profile } = useAuthRole();
+  const revokePortal = useMutation(api.portalAccess.revokeCurrent);
+
+  const signOut = async () => {
+    await revokePortal({}).catch(() => undefined);
+    await authClient.signOut();
+    router.replace("/");
+    router.refresh();
+  };
 
   return (
     <>
@@ -35,10 +50,10 @@ export function DashboardSidebar({ title, subtitle, items, accentColor = "from-[
         initial={false}
         animate={{ width: collapsed ? 72 : 260 }}
         transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-        className="hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-[#E4EBF5] z-40 shadow-[6px_0_14px_rgba(163,177,198,0.4)]"
+        className="dashboard-sidebar hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-background z-40"
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 h-16 border-b border-[#C8D0E0]">
+        <div className="flex items-center gap-3 px-4 h-16 border-b border-border">
           <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${accentColor} flex items-center justify-center flex-shrink-0 shadow-neu-sm`}>
             <span className="text-[#1A2E35] text-sm font-bold">S</span>
           </div>
@@ -106,15 +121,11 @@ export function DashboardSidebar({ title, subtitle, items, accentColor = "from-[
         </nav>
 
         {/* Footer */}
-        <div className="p-3 border-t border-[#C8D0E0]">
+        <div className="p-3 border-t border-border">
           <div className="flex items-center gap-3 px-2">
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: "w-8 h-8",
-                },
-              }}
-            />
+            <div className="w-8 h-8 rounded-full neu-pressed flex items-center justify-center" aria-hidden="true">
+              <UserRound className="w-4 h-4" />
+            </div>
             <AnimatePresence>
               {!collapsed && (
                 <motion.span
@@ -123,13 +134,26 @@ export function DashboardSidebar({ title, subtitle, items, accentColor = "from-[
                   exit={{ opacity: 0 }}
                   className="text-xs text-muted-foreground"
                 >
-                  Account
+                  {profile?.name ?? "Account"}
                 </motion.span>
               )}
             </AnimatePresence>
           </div>
+          <div className="mt-3">
+            <ThemeToggle compact={collapsed} />
+          </div>
+          <button
+            type="button"
+            onClick={signOut}
+            aria-label="Sign out"
+            className="mt-3 w-full min-h-10 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-[#E85D75] neu-btn"
+          >
+            <LogOut className="w-4 h-4" />
+            {!collapsed && <span className="text-xs">Sign out</span>}
+          </button>
           <button
             onClick={() => setCollapsed(!collapsed)}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-muted-foreground hover:text-foreground neu-btn transition-colors"
           >
             {collapsed ? (
@@ -145,7 +169,10 @@ export function DashboardSidebar({ title, subtitle, items, accentColor = "from-[
       </motion.aside>
 
       {/* Mobile bottom nav */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 bg-[#E4EBF5] shadow-[0_-4px_14px_rgba(163,177,198,0.5)] z-40 px-2 py-1 safe-area-bottom">
+      <div className="lg:hidden fixed bottom-20 right-4 z-40 w-12">
+        <ThemeToggle compact />
+      </div>
+      <div className="dashboard-mobile-nav lg:hidden fixed bottom-0 inset-x-0 bg-background z-40 px-2 py-1 safe-area-bottom">
         <div className="flex items-center justify-around">
           {items.slice(0, 5).map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");

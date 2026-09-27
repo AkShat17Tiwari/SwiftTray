@@ -1,79 +1,30 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Users, ShoppingBag, Star, TrendingUp, Search, Eye, Ban, Clock } from "lucide-react";
-import { StatCard } from "@/components/dashboard/stat-card";
-
-const STUDENT_STATS = [
-  { label: "Total Students", value: "2,847", change: "+312", trend: "up" as const, icon: Users, color: "from-blue-500 to-cyan-500" },
-  { label: "Active This Week", value: "1,024", change: "+8%", trend: "up" as const, icon: TrendingUp, color: "from-emerald-500 to-teal-500" },
-  { label: "Avg Orders/Student", value: "3.2", change: "+0.4", trend: "up" as const, icon: ShoppingBag, color: "from-indigo-500 to-purple-500" },
-  { label: "Top Rated", value: "4.6 ★", change: "+0.1", trend: "up" as const, icon: Star, color: "from-amber-500 to-orange-500" },
-];
-
-const TOP_STUDENTS = [
-  { name: "Arjun Patel", email: "arjun@campus.edu", orders: 48, spent: 12400, lastOrder: "2 hours ago", status: "active" },
-  { name: "Sneha Reddy", email: "sneha@campus.edu", orders: 42, spent: 10800, lastOrder: "4 hours ago", status: "active" },
-  { name: "Vikram Singh", email: "vikram@campus.edu", orders: 38, spent: 9600, lastOrder: "1 day ago", status: "active" },
-  { name: "Ananya Sharma", email: "ananya@campus.edu", orders: 35, spent: 8400, lastOrder: "6 hours ago", status: "active" },
-  { name: "Rohan Kumar", email: "rohan@campus.edu", orders: 32, spent: 7200, lastOrder: "3 days ago", status: "active" },
-  { name: "Priya Menon", email: "priya.m@campus.edu", orders: 28, spent: 6800, lastOrder: "5 days ago", status: "active" },
-  { name: "Karthik Nair", email: "karthik@campus.edu", orders: 25, spent: 5600, lastOrder: "1 week ago", status: "suspended" },
-];
+import { useMemo, useState } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { Search, ShieldBan, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { formatPrice, formatRelativeTime } from "@/lib/utils";
 
 export default function AdminStudentsPage() {
-  return (
-    <div className="space-y-6">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-extrabold">Student <span className="gradient-text">Activity</span></h1>
-        <p className="text-sm text-muted-foreground">Monitor student engagement and ordering patterns</p>
-      </motion.div>
+  const [search, setSearch] = useState("");
+  const students = useQuery(api.users.listByRole, { role: "student" });
+  const orders = useQuery(api.orders.list, {});
+  const updateStatus = useMutation(api.users.updateStatus);
+  const rows = useMemo(() => (students ?? []).map((student) => {
+    const owned = (orders ?? []).filter((order) => order.userId === student.authUserId);
+    const paid = owned.filter((order) => order.paymentStatus === "completed");
+    return { ...student, orderCount: owned.length, spent: paid.reduce((sum, order) => sum + order.totalAmount, 0), lastOrder: owned.sort((a, b) => b._creationTime - a._creationTime)[0]?._creationTime };
+  }), [students, orders]);
+  const visible = rows.filter((row) => `${row.name} ${row.email}`.toLowerCase().includes(search.trim().toLowerCase()));
+  const setStatus = async (userId: Id<"users">, status: "active" | "suspended") => { try { await updateStatus({ userId, status }); toast.success(status === "active" ? "Student restored" : "Student suspended"); } catch (error) { toast.error(error instanceof Error ? error.message : "Could not update student"); } };
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {STUDENT_STATS.map((s, i) => <StatCard key={s.label} {...s} delay={i} />)}
-      </div>
-
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input placeholder="Search students..." className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-secondary/50 border border-border/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
-      </div>
-
-      <div className="glass-card overflow-hidden">
-        <div className="grid grid-cols-12 gap-4 px-4 py-3 text-xs font-semibold text-muted-foreground border-b border-border">
-          <span className="col-span-3">Student</span>
-          <span className="col-span-2 text-center">Orders</span>
-          <span className="col-span-2 text-center">Total Spent</span>
-          <span className="col-span-2">Last Order</span>
-          <span className="col-span-1 text-center">Status</span>
-          <span className="col-span-2 text-right">Actions</span>
-        </div>
-        {TOP_STUDENTS.map((student, i) => (
-          <motion.div
-            key={student.email}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: i * 0.03 }}
-            className="grid grid-cols-12 gap-4 px-4 py-3 text-sm items-center hover:bg-secondary/30 transition-colors border-b border-border/30 last:border-0"
-          >
-            <div className="col-span-3">
-              <p className="font-medium text-sm">{student.name}</p>
-              <p className="text-[10px] text-muted-foreground">{student.email}</p>
-            </div>
-            <span className="col-span-2 text-center text-xs font-bold">{student.orders}</span>
-            <span className="col-span-2 text-center text-xs font-bold text-emerald-500">₹{student.spent.toLocaleString()}</span>
-            <span className="col-span-2 text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" />{student.lastOrder}</span>
-            <div className="col-span-1 flex justify-center">
-              <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold border ${
-                student.status === "active" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-red-500/10 text-red-500 border-red-500/20"
-              }`}>{student.status === "active" ? "Active" : "Suspended"}</span>
-            </div>
-            <div className="col-span-2 flex justify-end gap-1">
-              <button className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"><Eye className="w-4 h-4" /></button>
-              <button className="p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors"><Ban className="w-4 h-4" /></button>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  );
+  return <div className="space-y-6"><header><h1 className="text-2xl font-extrabold">Student <span className="gradient-text">Activity</span></h1><p className="text-sm text-muted-foreground">Live account and paid-order totals</p></header>
+    <label className="relative block"><span className="sr-only">Search students</span><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search students" className="w-full min-h-11 pl-10 pr-4 rounded-xl bg-secondary/50 border"/></label>
+    <div className="glass-card overflow-x-auto"><div className="min-w-[720px]"><div className="grid grid-cols-12 gap-4 px-4 py-3 text-xs font-semibold text-muted-foreground border-b"><span className="col-span-4">Student</span><span className="col-span-2 text-center">Orders</span><span className="col-span-2 text-center">Paid total</span><span className="col-span-2">Last order</span><span className="col-span-2 text-right">Account</span></div>
+    {students === undefined || orders === undefined ? <p className="p-10 text-center text-sm text-muted-foreground">Loading students…</p> : visible.length === 0 ? <p className="p-10 text-center text-sm text-muted-foreground">No matching students.</p> : visible.map((student) => <div key={student._id} className="grid grid-cols-12 gap-4 px-4 py-3 items-center border-b last:border-0"><div className="col-span-4"><p className="font-semibold text-sm">{student.name}</p><p className="text-xs text-muted-foreground">{student.email}</p></div><span className="col-span-2 text-center text-sm font-bold">{student.orderCount}</span><span className="col-span-2 text-center text-sm font-bold text-emerald-600">{formatPrice(student.spent)}</span><span className="col-span-2 text-xs text-muted-foreground">{student.lastOrder ? formatRelativeTime(student.lastOrder) : "No orders"}</span><div className="col-span-2 flex justify-end"><button type="button" onClick={() => setStatus(student._id, student.status === "suspended" ? "active" : "suspended")} className={`min-h-10 px-3 rounded-xl text-xs font-semibold flex items-center gap-2 ${student.status === "suspended" ? "text-emerald-600 bg-emerald-500/10" : "text-red-600 bg-red-500/10"}`}>{student.status === "suspended" ? <ShieldCheck className="w-4 h-4"/> : <ShieldBan className="w-4 h-4"/>}{student.status === "suspended" ? "Restore" : "Suspend"}</button></div></div>)}
+    </div></div>
+  </div>;
 }

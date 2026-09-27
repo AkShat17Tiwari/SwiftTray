@@ -1,6 +1,5 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -58,10 +57,9 @@ type VendorWorkspace = {
 };
 
 export function VendorDashboardOverview() {
-  const { user } = useUser();
   const workspace = useQuery(
     api.dashboards.vendorWorkspace,
-    user?.id ? { vendorUserId: user.id } : "skip"
+    {}
   ) as VendorWorkspace | null | undefined;
   const updateStatus = useMutation(api.orders.updateStatus);
 
@@ -93,12 +91,10 @@ export function VendorDashboardOverview() {
         </div>
         <h1 className="text-2xl font-extrabold mb-2">No outlet assigned</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          Verify with your vendor workspace key to unlock your individual dashboard.
+          Request an outlet assignment and wait for administrator approval.
         </p>
-        <Link href="/vendor/access">
-          <button className="px-5 py-2.5 rounded-xl neu-btn-primary text-[#1A2E35] text-sm font-semibold">
-            Enter Vendor Key
-          </button>
+        <Link href="/vendor/access" className="inline-flex min-h-11 px-5 rounded-xl neu-btn-primary text-[#1A2E35] text-sm font-semibold items-center">
+            Request vendor access
         </Link>
       </div>
     );
@@ -298,15 +294,11 @@ export function VendorDashboardOverview() {
 
           <div className="mt-4 space-y-2">
             <h3 className="text-sm font-bold text-muted-foreground mb-2">Quick Actions</h3>
-            <Link href="/vendor/menu">
-              <button className="w-full px-4 py-2.5 rounded-xl border border-border/50 bg-card/50 text-sm font-medium hover:bg-card transition-colors text-left flex items-center gap-2">
+            <Link href="/vendor/menu" className="w-full min-h-11 px-4 rounded-xl border border-border/50 bg-card/50 text-sm font-medium hover:bg-card transition-colors text-left flex items-center gap-2">
                 <span className="text-base">+</span> Add Menu Item
-              </button>
             </Link>
-            <Link href="/vendor/analytics">
-              <button className="w-full px-4 py-2.5 rounded-xl border border-border/50 bg-card/50 text-sm font-medium hover:bg-card transition-colors text-left flex items-center gap-2">
+            <Link href="/vendor/analytics" className="w-full min-h-11 px-4 rounded-xl border border-border/50 bg-card/50 text-sm font-medium hover:bg-card transition-colors text-left flex items-center gap-2">
                 <TrendingUp className="w-4 h-4" /> View Analytics
-              </button>
             </Link>
           </div>
         </section>

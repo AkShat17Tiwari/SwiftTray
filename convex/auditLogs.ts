@@ -1,26 +1,13 @@
-import { query, mutation } from "./_generated/server";
+import { query } from "./_generated/server";
 import { v } from "convex/values";
-
-export const log = mutation({
-  args: {
-    userId: v.string(),
-    userName: v.string(),
-    action: v.string(),
-    targetType: v.string(),
-    targetId: v.optional(v.string()),
-    details: v.optional(v.string()),
-    metadata: v.optional(v.any()),
-  },
-  handler: async (ctx, args) => {
-    return await ctx.db.insert("auditLogs", args);
-  },
-});
+import { requireAdmin, requireProfile } from "./lib/auth";
 
 export const list = query({
   args: {
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const logs = await ctx.db
       .query("auditLogs")
       .order("desc")
@@ -32,6 +19,8 @@ export const list = query({
 export const listByUser = query({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
+    const current = await requireProfile(ctx);
+    if (current.userId !== args.userId) await requireAdmin(ctx);
     return await ctx.db
       .query("auditLogs")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
@@ -43,6 +32,7 @@ export const listByUser = query({
 export const listByAction = query({
   args: { action: v.string() },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     return await ctx.db
       .query("auditLogs")
       .withIndex("by_action", (q) => q.eq("action", args.action))

@@ -6,7 +6,7 @@ export default defineSchema({
   // Users
   // ============================================================
   users: defineTable({
-    clerkId: v.string(),
+    authUserId: v.string(),
     name: v.string(),
     email: v.string(),
     phone: v.optional(v.string()),
@@ -23,13 +23,18 @@ export default defineSchema({
     ),
     avatarUrl: v.optional(v.string()),
     assignedOutletId: v.optional(v.id("outlets")),
+    vendorLoginCodeHash: v.optional(v.string()),
+    vendorLoginCodeIssuedAt: v.optional(v.number()),
+    portalAccessExpiresAt: v.optional(v.number()),
+    portalFailedAttempts: v.optional(v.number()),
+    portalLockedUntil: v.optional(v.number()),
     favoriteOutlets: v.array(v.string()),
     preferences: v.object({
       dietary: v.optional(v.array(v.string())),
       defaultPickupNotes: v.optional(v.string()),
     }),
   })
-    .index("by_clerkId", ["clerkId"])
+    .index("by_authUserId", ["authUserId"])
     .index("by_email", ["email"])
     .index("by_role", ["role"])
     .index("by_status", ["status"]),
@@ -199,6 +204,42 @@ export default defineSchema({
     .index("by_pickupToken", ["pickupToken"]),
 
   // ============================================================
+  // Razorpay attempts — one row per checkout attempt
+  // ============================================================
+  payments: defineTable({
+    orderId: v.id("orders"),
+    razorpayOrderId: v.optional(v.string()),
+    razorpayPaymentId: v.optional(v.string()),
+    razorpaySignature: v.optional(v.string()),
+    attempt: v.number(),
+    amount: v.number(),
+    amountInPaise: v.optional(v.number()),
+    currency: v.optional(v.string()),
+    status: v.union(
+      v.literal("created"),
+      v.literal("pending"),
+      v.literal("authorized"),
+      v.literal("captured"),
+      v.literal("failed"),
+      v.literal("refunded")
+    ),
+    paymentLink: v.optional(v.string()),
+    lastGatewayStatus: v.optional(v.string()),
+    lastEventAt: v.optional(v.number()),
+  })
+    .index("by_orderId", ["orderId"])
+    .index("by_razorpayOrderId", ["razorpayOrderId"])
+    .index("by_razorpayPaymentId", ["razorpayPaymentId"]),
+
+  razorpayWebhookEvents: defineTable({
+    eventId: v.string(),
+    eventName: v.string(),
+    razorpayOrderId: v.optional(v.string()),
+    razorpayPaymentId: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_eventId", ["eventId"]),
+
+  // ============================================================
   // Notifications
   // ============================================================
   notifications: defineTable({
@@ -349,44 +390,4 @@ export default defineSchema({
     .index("by_isActive", ["isActive"])
     .index("by_targetRole", ["targetRole"]),
 
-  // ============================================================
-  // Vendor Portal Keys (per-outlet access keys)
-  // ============================================================
-  vendorPortalKeys: defineTable({
-    outletId: v.id("outlets"),
-    vendorUserId: v.string(),
-    key: v.string(),
-    isActive: v.boolean(),
-    lastUsedAt: v.optional(v.number()),
-    rotatedAt: v.optional(v.number()),
-  })
-    .index("by_key", ["key"])
-    .index("by_outletId", ["outletId"])
-    .index("by_vendorUserId", ["vendorUserId"]),
-
-  // ============================================================
-  // Security Events (access key audit trail)
-  // ============================================================
-  securityEvents: defineTable({
-    userId: v.optional(v.string()),
-    userName: v.optional(v.string()),
-    eventType: v.union(
-      v.literal("admin_key_success"),
-      v.literal("admin_key_failure"),
-      v.literal("vendor_key_success"),
-      v.literal("vendor_key_failure"),
-      v.literal("brute_force_lockout"),
-      v.literal("key_rotated"),
-      v.literal("key_revoked"),
-      v.literal("session_expired")
-    ),
-    portalType: v.union(v.literal("admin"), v.literal("vendor")),
-    outletId: v.optional(v.id("outlets")),
-    ipAddress: v.optional(v.string()),
-    userAgent: v.optional(v.string()),
-    details: v.optional(v.string()),
-  })
-    .index("by_userId", ["userId"])
-    .index("by_eventType", ["eventType"])
-    .index("by_portalType", ["portalType"]),
 });

@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Store, UserCheck, ShoppingBag, BarChart3,
   Ticket, Megaphone, Shield, Users, Tag,
 } from "lucide-react";
+import { RoleGuard } from "@/components/auth/role-guard";
 
 const ADMIN_NAV = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
@@ -21,7 +22,8 @@ const ADMIN_NAV = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#E4EBF5]">
+    <RoleGuard allowed={["admin", "super_admin"]}>
+      <div className="min-h-screen bg-background text-foreground">
       <DashboardSidebar
         title="SwiftTray"
         subtitle="Admin Control Center"
@@ -33,6 +35,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {children}
         </div>
       </main>
-    </div>
+      </div>
+    </RoleGuard>
   );
 }

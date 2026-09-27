@@ -8,7 +8,7 @@ const ICONS = { "search": Search, "shopping-cart": ShoppingCart, "clock": Clock,
 
 export function HowItWorks() {
   return (
-    <section className="section-padding relative">
+    <section id="how-it-works" className="section-padding relative scroll-mt-20">
       <div className="max-w-5xl mx-auto relative">
         {/* Header */}
         <motion.div

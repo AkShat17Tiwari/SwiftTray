@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -21,17 +20,19 @@ import { CartDrawer } from "@/components/layout/cart-drawer";
 import { NAV_LINKS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
+import { useAuthRole } from "@/hooks/use-auth-role";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 export function Navbar() {
   const pathname = usePathname();
-  const { user } = useUser();
+  const auth = useAuthRole();
   const { itemCount } = useCart();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   const unreadNotifs =
-    useQuery(api.notifications.getUnreadCount, user?.id ? { userId: user.id } : "skip") ?? 0;
+    useQuery(api.notifications.getUnreadCount, auth.isSignedIn ? {} : "skip") ?? 0;
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -50,7 +51,7 @@ export function Navbar() {
         className={cn(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
           isScrolled || !isLandingPage
-            ? "bg-[#E4EBF5] shadow-[4px_4px_12px_rgba(163,177,198,0.6),-4px_-4px_12px_#FFFFFF]"
+            ? "app-header bg-background"
             : "bg-transparent"
         )}
       >
@@ -105,29 +106,30 @@ export function Navbar() {
 
             {/* Right Actions */}
             <div className="flex items-center gap-2">
+              <div className="hidden sm:block w-11">
+                <ThemeToggle compact />
+              </div>
               {/* Notifications */}
-              <Link href="/orders">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="relative w-9 h-9 rounded-full neu-btn flex items-center justify-center text-muted-foreground hover:text-foreground"
-                  aria-label="Notifications"
-                >
-                  <Bell className="w-4 h-4" />
-                  {unreadNotifs > 0 && (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#FF8A80] text-white text-[10px] font-bold flex items-center justify-center"
-                    >
-                      {unreadNotifs}
-                    </motion.span>
-                  )}
-                </motion.button>
+              <Link
+                href="/orders"
+                className="relative w-9 h-9 rounded-full neu-btn flex items-center justify-center text-muted-foreground hover:text-foreground transition-transform hover:scale-105 active:scale-95"
+                aria-label="Notifications"
+              >
+                <Bell className="w-4 h-4" />
+                {unreadNotifs > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#FF8A80] text-white text-[10px] font-bold flex items-center justify-center"
+                  >
+                    {unreadNotifs}
+                  </motion.span>
+                )}
               </Link>
 
               {/* Cart */}
               <motion.button
+                id="cart-fly-target"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsCartOpen(true)}
@@ -149,36 +151,29 @@ export function Navbar() {
 
               {/* Portal Links */}
               <div className="hidden md:flex items-center gap-1.5">
-                <Link href="/student/dashboard">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground neu-pill"
-                  >
-                    <Users className="w-3.5 h-3.5" />
-                    Student
-                  </motion.button>
+                <Link
+                  href="/student/dashboard"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground neu-pill transition-transform hover:scale-105 active:scale-95"
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  Student
                 </Link>
-                <Link href="/vendor/dashboard">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground neu-pill"
-                  >
-                    <Store className="w-3.5 h-3.5" />
-                    Vendor
-                  </motion.button>
+                <Link
+                  href={auth.hasVendorAccess ? "/vendor/dashboard" : "/vendor/access"}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground neu-pill transition-transform hover:scale-105 active:scale-95"
+                >
+                  <Store className="w-3.5 h-3.5" />
+                  Vendor
                 </Link>
-                <Link href="/admin/access">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-full neu-btn-primary text-sm font-bold shadow-mint-glow"
+                {auth.hasAdminAccess && (
+                  <Link
+                    href="/admin"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-full neu-btn-primary text-sm font-bold shadow-mint-glow transition-transform hover:scale-105 active:scale-95"
                   >
                     <Shield className="w-3.5 h-3.5" />
                     Admin
-                  </motion.button>
-                </Link>
+                  </Link>
+                )}
               </div>
 
               {/* Mobile Menu Toggle */}
@@ -207,7 +202,7 @@ export function Navbar() {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
-              className="md:hidden bg-[#E4EBF5] shadow-[0_6px_14px_rgba(163,177,198,0.5)]"
+              className="app-mobile-menu md:hidden bg-background"
               onClick={(event) => {
                 if ((event.target as HTMLElement).closest("a")) {
                   setIsMobileMenuOpen(false);
@@ -232,7 +227,10 @@ export function Navbar() {
                     </Link>
                   );
                 })}
-                <div className="border-t border-[#C8D0E0] mt-2 pt-2">
+                <div className="border-t border-border mt-2 pt-2">
+                  <div className="px-4 py-2 sm:hidden">
+                    <ThemeToggle />
+                  </div>
                   <p className="px-4 py-1 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">Portals</p>
                   <Link
                     href="/student/dashboard"
@@ -244,7 +242,7 @@ export function Navbar() {
                     Student Portal
                   </Link>
                   <Link
-                    href="/vendor/dashboard"
+                    href={auth.hasVendorAccess ? "/vendor/dashboard" : "/vendor/access"}
                     className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground"
                   >
                     <div className="neu-icon w-7 h-7 rounded-lg">
@@ -252,15 +250,15 @@ export function Navbar() {
                     </div>
                     Vendor Portal
                   </Link>
-                  <Link
-                    href="/admin/access"
+                  {auth.hasAdminAccess && <Link
+                    href="/admin"
                     className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground"
                   >
                     <div className="neu-icon w-7 h-7 rounded-lg">
                       <Shield className="w-3.5 h-3.5 text-[#E85D75]" />
                     </div>
                     Admin Portal
-                  </Link>
+                  </Link>}
                 </div>
               </nav>
             </motion.div>

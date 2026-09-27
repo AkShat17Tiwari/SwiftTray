@@ -14,7 +14,7 @@ interface StatCardProps {
   delay?: number;
 }
 
-export function StatCard({ label, value, change, trend = "up", icon: Icon, color, delay = 0 }: StatCardProps) {
+export function StatCard({ label, value, change, trend = "up", icon: Icon, delay = 0 }: StatCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

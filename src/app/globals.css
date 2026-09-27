@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ============================================================
    SwiftTray — Premium Neumorphic Design System
    Soft-raised light UI with mint/cyan accents
@@ -51,6 +53,7 @@
    ============================================================ */
 
 :root {
+  color-scheme: light;
   --background: #E4EBF5;
   --foreground: #31344B;
   --card: #E4EBF5;
@@ -60,7 +63,7 @@
   --secondary: #D1D9E6;
   --secondary-foreground: #31344B;
   --muted: #D1D9E6;
-  --muted-foreground: #7B8BA3;
+  --muted-foreground: #59697F;
   --accent: #E8FFF8;
   --accent-foreground: #1A2E35;
   --border: #C8D0E0;
@@ -89,6 +92,46 @@
 }
 
 /* ============================================================
+   Neumorphic Dark Mode
+   ============================================================ */
+
+.dark {
+  color-scheme: dark;
+  --background: #171C24;
+  --foreground: #F3F7FB;
+  --card: #171C24;
+  --card-foreground: #F3F7FB;
+  --primary: #67E8D8;
+  --primary-foreground: #102A2D;
+  --secondary: #232B36;
+  --secondary-foreground: #EEF4F8;
+  --muted: #232B36;
+  --muted-foreground: #AEBBCB;
+  --accent: #193B3B;
+  --accent-foreground: #E9FFFB;
+  --border: #394553;
+  --input: #232B36;
+  --ring: #67E8D8;
+  --destructive: #FF8095;
+
+  --neu-shadow-light: rgba(62, 74, 89, 0.46);
+  --neu-shadow-dark: rgba(4, 7, 11, 0.82);
+  --neu-shadow-dark-subtle: rgba(4, 7, 11, 0.58);
+
+  --color-mint: #67E8D8;
+  --color-teal: #77D5D4;
+  --color-coral: #FF9A91;
+  --color-success: #79E3A9;
+  --color-warning: #FFC262;
+  --color-info: #7DB8F1;
+
+  --gradient-mint: linear-gradient(135deg, #67E8D8 0%, #77D5D4 100%);
+  --gradient-coral: linear-gradient(135deg, #FF9A91 0%, #FF7878 100%);
+  --gradient-success: linear-gradient(135deg, #79E3A9 0%, #55C991 100%);
+  --gradient-warning: linear-gradient(135deg, #FFC262 0%, #F0A942 100%);
+}
+
+/* ============================================================
    Base Styles
    ============================================================ */
 
@@ -102,6 +145,52 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--ring) 70%, transparent);
+  outline-offset: 3px;
+}
+
+.dashboard-sidebar {
+  box-shadow: 6px 0 14px var(--neu-shadow-dark-subtle);
+}
+
+.dashboard-mobile-nav {
+  box-shadow: 0 -4px 14px var(--neu-shadow-dark-subtle);
+}
+
+.app-header {
+  box-shadow:
+    4px 4px 12px var(--neu-shadow-dark),
+    -4px -4px 12px var(--neu-shadow-light);
+}
+
+.app-mobile-menu {
+  box-shadow: 0 6px 14px var(--neu-shadow-dark-subtle);
+}
+
+.cart-drawer {
+  box-shadow: -8px 0 20px var(--neu-shadow-dark-subtle);
+}
+
+.theme-toggle {
+  min-width: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Custom Scrollbar */

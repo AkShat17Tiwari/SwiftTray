@@ -10,6 +10,9 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://swifttray.vercel.app"
+  ),
   title: {
     default: "SwiftTray — Skip the Queue. Savor the Flavor.",
     template: "%s | SwiftTray",
@@ -34,8 +37,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  themeColor: "#E4EBF5",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#E4EBF5" },
+    { media: "(prefers-color-scheme: dark)", color: "#171C24" },
+  ],
 };
 
 export default function RootLayout({
@@ -44,7 +49,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="light" suppressHydrationWarning>
+      <head>
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html:
+              '(function(){try{var t=localStorage.getItem("swifttray-theme");var r=document.documentElement;r.classList.remove("light","dark");r.classList.add(t==="dark"?"dark":"light")}catch(e){document.documentElement.classList.add("light")}})()',
+          }}
+        />
+      </head>
       <body className={`${outfit.variable} font-sans min-h-screen flex flex-col antialiased`}>
         <Providers>{children}</Providers>
       </body>

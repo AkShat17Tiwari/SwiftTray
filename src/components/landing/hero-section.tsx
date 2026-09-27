@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from "framer-motion";
+import { motion, useMotionValue, useSpring, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { RolePortalButtons } from "@/components/portal/role-portal-buttons";
 import {
-  ArrowRight, Play, Zap, Clock, Store, Timer,
-  CheckCircle, ChefHat, Bell, MapPin, Star, TrendingUp,
-  Users, ShoppingBag,
+  ArrowRight, Play, Clock, Store, Timer,
+  CheckCircle, ChefHat, Bell, MapPin, Star, ShieldCheck,
+  ShoppingBag,
 } from "lucide-react";
 
 /* ─────────────────────────────────────────────
@@ -27,19 +27,10 @@ const ROTATING_WORDS = ["Minutes", "Seconds", "No Time"];
    Benefit chips
    ───────────────────────────────────────────── */
 const BENEFITS = [
-  { icon: Timer, label: "2 min ordering" },
-  { icon: Clock, label: "Live ETA" },
-  { icon: Store, label: "15+ outlets" },
-  { icon: Zap, label: "No waiting" },
-];
-
-/* ─────────────────────────────────────────────
-   Trust stats
-   ───────────────────────────────────────────── */
-const TRUST_STATS = [
-  { value: 5000, suffix: "+", label: "Students", icon: Users },
-  { value: 15, suffix: "+", label: "Outlets", icon: Store },
-  { value: 80, suffix: "%", label: "Less Waiting", icon: TrendingUp },
+  { icon: Timer, label: "Fast ordering" },
+  { icon: Clock, label: "Live status" },
+  { icon: Store, label: "Live menus" },
+  { icon: ShieldCheck, label: "Secure checkout" },
 ];
 
 /* ─────────────────────────────────────────────
@@ -53,34 +44,6 @@ const FOOD_CARDS = [
   { emoji: "🌮", name: "Loaded Taco", price: "₹110" },
   { emoji: "☕", name: "Cappuccino", price: "₹80" },
 ];
-
-/* ─────────────────────────────────────────────
-   Animated Counter
-   ───────────────────────────────────────────── */
-function Counter({ value, suffix }: { value: number; suffix: string }) {
-  const motionVal = useMotionValue(0);
-  const rounded = useTransform(motionVal, (v) => `${Math.floor(v).toLocaleString()}${suffix}`);
-  const [display, setDisplay] = useState(`0${suffix}`);
-
-  useEffect(() => {
-    const unsub = rounded.on("change", (v) => setDisplay(v));
-    const timeout = setTimeout(() => {
-      const duration = 2000;
-      const startTime = performance.now();
-      const step = (now: number) => {
-        const elapsed = now - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const eased = 1 - Math.pow(1 - progress, 4);
-        motionVal.set(eased * value);
-        if (progress < 1) requestAnimationFrame(step);
-      };
-      requestAnimationFrame(step);
-    }, 1500);
-    return () => { unsub(); clearTimeout(timeout); };
-  }, [value, motionVal, rounded]);
-
-  return <span className="tabular-nums">{display}</span>;
-}
 
 /* ─────────────────────────────────────────────
    Phone Mockup — Neumorphic
@@ -273,48 +236,6 @@ function FloatingFoodCard({ card, index, total }: { card: typeof FOOD_CARDS[0]; 
 }
 
 /* ─────────────────────────────────────────────
-   Live Activity Indicator
-   ───────────────────────────────────────────── */
-function LiveActivity() {
-  const [count, setCount] = useState(23);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCount((prev) => prev + Math.floor(Math.random() * 3) - 1);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, []);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: 2.5, duration: 0.5 }}
-      className="inline-flex items-center gap-2 px-4 py-2 rounded-full neu-raised-sm"
-    >
-      <span className="relative flex h-2 w-2">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#68D89B] opacity-75" />
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#68D89B]" />
-      </span>
-      <span className="text-xs text-[#68D89B] font-medium tabular-nums">
-        <AnimatePresence mode="wait">
-          <motion.span
-            key={count}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.3 }}
-          >
-            {count}
-          </motion.span>
-        </AnimatePresence>
-        {" "}students ordering now
-      </span>
-    </motion.div>
-  );
-}
-
-/* ─────────────────────────────────────────────
    HERO SECTION — Neumorphic Main Component
    ───────────────────────────────────────────── */
 export function HeroSection() {
@@ -358,7 +279,7 @@ export function HeroSection() {
 
             {/* Live Badge */}
             <motion.div variants={stagger.item}>
-              <LiveActivity />
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full neu-raised-sm text-xs text-emerald-600 font-medium"><span className="w-2 h-2 rounded-full bg-emerald-500"/>Live campus ordering</div>
             </motion.div>
 
             {/* Headline */}
@@ -400,18 +321,14 @@ export function HeroSection() {
 
             {/* CTA Buttons */}
             <motion.div variants={stagger.item} className="flex flex-col sm:flex-row gap-3 mt-8">
-              <Link href="/student/dashboard">
-                <motion.button
-                  whileHover={{ scale: 1.04, y: -2 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="neon-glow px-7 py-3.5 rounded-2xl neu-btn-primary text-[#1A2E35] font-bold text-base flex items-center gap-2.5 group w-full sm:w-auto justify-center"
-                >
+              <Link href="/student/dashboard" className="min-h-12 neon-glow px-7 rounded-2xl neu-btn-primary text-[#1A2E35] font-bold text-base flex items-center gap-2.5 group w-full sm:w-auto justify-center">
                   <ShoppingBag className="w-4.5 h-4.5" />
                   Order Now
                   <ArrowRight className="w-4.5 h-4.5 group-hover:translate-x-1 transition-transform" />
-                </motion.button>
               </Link>
               <motion.button
+                type="button"
+                onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
                 whileHover={{ scale: 1.04, y: -2 }}
                 whileTap={{ scale: 0.97 }}
                 className="neon-glow neon-glow-warm px-7 py-3.5 rounded-2xl neu-btn text-foreground font-semibold text-base flex items-center gap-2.5 w-full sm:w-auto justify-center"
@@ -446,29 +363,6 @@ export function HeroSection() {
               ))}
             </motion.div>
 
-            {/* Trust Stats */}
-            <motion.div
-              variants={stagger.item}
-              className="flex items-center gap-6 mt-10 pt-8 border-t border-[#C8D0E0]"
-            >
-              {TRUST_STATS.map((stat, i) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.8 + i * 0.15 }}
-                  className="text-center sm:text-left"
-                >
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <stat.icon className="w-3.5 h-3.5 text-primary hidden sm:block" />
-                    <p className="text-2xl md:text-3xl font-extrabold gradient-text">
-                      <Counter value={stat.value} suffix={stat.suffix} />
-                    </p>
-                  </div>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">{stat.label}</p>
-                </motion.div>
-              ))}
-            </motion.div>
           </motion.div>
 
           {/* ━━━━━━━━ RIGHT COLUMN — WOW FACTOR ━━━━━━━━ */}

@@ -3,7 +3,6 @@ import { StatsSection } from "@/components/landing/stats-section";
 import { FeaturedOutlets } from "@/components/landing/featured-outlets";
 import { TopMealsCarousel } from "@/components/landing/top-meals-carousel";
 import { HowItWorks } from "@/components/landing/how-it-works";
-import { Testimonials } from "@/components/landing/testimonials";
 import { FaqSection } from "@/components/landing/faq-section";
 import { CtaSection } from "@/components/landing/cta-section";
 import { Navbar } from "@/components/layout/navbar";
@@ -19,7 +18,6 @@ export default function HomePage() {
         <FeaturedOutlets />
         <TopMealsCarousel />
         <HowItWorks />
-        <Testimonials />
         <FaqSection />
         <CtaSection />
       </main>

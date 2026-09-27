@@ -1,5 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { ConvexError } from "convex/values";
+import { recordAudit, requireAdmin } from "./lib/auth";
 
 export const validate = query({
   args: {
@@ -32,17 +34,46 @@ export const validate = query({
       discount = coupon.discountValue;
     }
 
-    return { valid: true, discount, coupon };
+    return {
+      valid: true,
+      discount,
+      code: coupon.code,
+      discountType: coupon.discountType,
+      discountValue: coupon.discountValue,
+    };
   },
 });
 
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db
-      .query("coupons")
-      .withIndex("by_isActive", (q) => q.eq("isActive", true))
-      .collect();
+    await requireAdmin(ctx);
+    return await ctx.db.query("coupons").order("desc").collect();
+  },
+});
+
+export const setActive = mutation({
+  args: { id: v.id("coupons"), isActive: v.boolean() },
+  handler: async (ctx, args) => {
+    const admin = await requireAdmin(ctx);
+    const coupon = await ctx.db.get(args.id);
+    if (!coupon) throw new ConvexError("Coupon not found.");
+    await ctx.db.patch(args.id, { isActive: args.isActive });
+    await recordAudit(ctx, admin, { action: args.isActive ? "activated_coupon" : "deactivated_coupon", targetType: "coupon", targetId: String(args.id), details: coupon.code });
+  },
+});
+
+export const remove = mutation({
+  args: { id: v.id("coupons") },
+  handler: async (ctx, args) => {
+    const admin = await requireAdmin(ctx);
+    const coupon = await ctx.db.get(args.id);
+    if (!coupon) throw new ConvexError("Coupon not found.");
+    if (coupon.usedCount > 0) {
+      throw new ConvexError("Deactivate a used coupon instead of deleting its history.");
+    }
+    await ctx.db.delete(args.id);
+    await recordAudit(ctx, admin, { action: "deleted_coupon", targetType: "coupon", targetId: String(args.id), details: coupon.code });
   },
 });
 
@@ -58,11 +89,30 @@ export const create = mutation({
     outletId: v.optional(v.id("outlets")),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("coupons", {
+    const admin = await requireAdmin(ctx);
+    const code = args.code.trim().toUpperCase();
+    if (
+      !/^[A-Z0-9_-]{3,24}$/.test(code) ||
+      args.discountValue <= 0 ||
+      args.minOrder < 0 ||
+      args.maxDiscount < 0 ||
+      args.usageLimit < 1 ||
+      args.validUntil <= Date.now()
+    ) {
+      throw new ConvexError("Enter valid coupon details.");
+    }
+    if (args.discountType === "percentage" && args.discountValue > 100) {
+      throw new ConvexError("Percentage discount cannot exceed 100%.");
+    }
+    const existing = await ctx.db.query("coupons").withIndex("by_code", (q) => q.eq("code", code)).unique();
+    if (existing) throw new ConvexError("A coupon with this code already exists.");
+    const id = await ctx.db.insert("coupons", {
       ...args,
-      code: args.code.toUpperCase(),
+      code,
       usedCount: 0,
       isActive: true,
     });
+    await recordAudit(ctx, admin, { action: "created_coupon", targetType: "coupon", targetId: String(id), details: code });
+    return id;
   },
 });

@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  ClipboardList, ChevronRight, Package, RefreshCw, Clock,
+  ChevronRight, Package, RefreshCw, Clock,
 } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import { formatPrice, formatDate, getOrderStatusLabel, getOrderStatusColor } from "@/lib/utils";
@@ -18,11 +17,7 @@ import type { Order } from "@/types";
 
 export default function OrdersPage() {
   const [tab, setTab] = useState<"active" | "past">("active");
-  const { user } = useUser();
-  const liveOrders = useQuery(
-    api.orders.getMyOrders,
-    user?.id ? { userId: user.id } : "skip"
-  ) as Order[] | undefined;
+  const liveOrders = useQuery(api.orders.getMyOrders, {}) as Order[] | undefined;
   const allOrders = liveOrders ?? [];
   const isLoading = liveOrders === undefined;
 
@@ -93,6 +88,7 @@ export default function OrdersPage() {
                           src={order.outletImage}
                           alt={order.outletName}
                           fill
+                          sizes="48px"
                           className="object-cover"
                         />
                       </div>
@@ -169,10 +165,8 @@ export default function OrdersPage() {
                     ? "You don't have any active orders right now"
                     : "Your order history will appear here"}
                 </p>
-                <Link href="/outlets">
-                  <button className="px-6 py-2.5 rounded-full gradient-primary text-white text-sm font-medium shadow-colored">
+                <Link href="/outlets" className="inline-flex min-h-11 px-6 rounded-full gradient-primary text-white text-sm font-medium shadow-colored items-center">
                     Start Ordering
-                  </button>
                 </Link>
               </div>
             )}

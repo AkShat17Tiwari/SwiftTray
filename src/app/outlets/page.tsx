@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -10,18 +10,15 @@ import { api } from "@convex/_generated/api";
 import { Navbar } from "@/components/layout/navbar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { Footer } from "@/components/layout/footer";
-import { toast } from "sonner";
 import type { Outlet } from "@/types";
 
 export default function OutletsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortBy, setSortBy] = useState<"rating" | "prepTime" | "name">("rating");
-  const [isSeeding, setIsSeeding] = useState(false);
   const liveOutlets = useQuery(api.outlets.list, {
     search: searchQuery || undefined,
   }) as Outlet[] | undefined;
-  const seedDemo = useMutation(api.seed.demo);
 
   const outlets = liveOutlets ?? [];
   const isLoading = liveOutlets === undefined;
@@ -36,18 +33,6 @@ export default function OutletsPage() {
       if (sortBy === "prepTime") return a.avgPrepTime - b.avgPrepTime;
       return a.name.localeCompare(b.name);
     });
-
-  const handleSeedDemo = async () => {
-    try {
-      setIsSeeding(true);
-      const result = await seedDemo();
-      toast.success(result.message);
-    } catch {
-      toast.error("Could not seed demo data");
-    } finally {
-      setIsSeeding(false);
-    }
-  };
 
   return (
     <>
@@ -146,6 +131,8 @@ export default function OutletsPage() {
                         src={outlet.coverImage}
                         alt={outlet.name}
                         fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        loading={i === 0 ? "eager" : "lazy"}
                         className="object-cover group-hover:scale-105 transition-transform duration-700"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
@@ -234,18 +221,8 @@ export default function OutletsPage() {
               <p className="text-sm text-muted-foreground">
                 {searchQuery
                   ? "Try a different search term"
-                  : "Seed the Convex database to start browsing real records."}
+                  : "An administrator can add an outlet from the control center."}
               </p>
-              {!searchQuery && (
-                <button
-                  onClick={handleSeedDemo}
-                  disabled={isSeeding}
-                  className="mt-5 px-5 py-2.5 rounded-xl neu-btn-primary text-[#1A2E35] text-sm font-semibold inline-flex items-center gap-2 disabled:opacity-70"
-                >
-                  {isSeeding && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Seed demo data
-                </button>
-              )}
             </div>
           )}
         </div>

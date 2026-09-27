@@ -1,126 +1,181 @@
 "use client";
 
 import { useState } from "react";
-import { useUser } from "@clerk/nextjs";
-import { useMutation, useQuery } from "convex/react";
-import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
+import Script from "next/script";
 import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { ConvexError } from "convex/values";
+import { motion } from "framer-motion";
 import {
-  ArrowLeft, ArrowRight, ShoppingBag, Clock, MapPin, Tag, Shield,
-  CheckCircle, X, Minus, Plus, CreditCard, Banknote, Smartphone,
-  Ticket, Loader2,
+  ArrowLeft,
+  ArrowRight,
+  Clock,
+  CreditCard,
+  Loader2,
+  MapPin,
+  Minus,
+  Plus,
+  ShieldCheck,
+  ShoppingBag,
+  Ticket,
+  X,
 } from "lucide-react";
-import { useCart } from "@/hooks/use-cart";
-import { formatPrice, calculateTax, generatePickupToken } from "@/lib/utils";
+import { toast } from "sonner";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { Navbar } from "@/components/layout/navbar";
 import { MobileNav } from "@/components/layout/mobile-nav";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
-import type { Outlet } from "@/types";
-import type { Id } from "@convex/_generated/dataModel";
+import { cartLineKey, useCart } from "@/hooks/use-cart";
+import { calculateTax, formatPrice } from "@/lib/utils";
 
-type CheckoutStep = "review" | "details" | "payment" | "confirmation";
-
-const PAYMENT_METHODS = [
-  { id: "upi", label: "UPI / QR", icon: Smartphone, desc: "Google Pay, PhonePe" },
-  { id: "card", label: "Card", icon: CreditCard, desc: "Debit / Credit Card" },
-  { id: "cash", label: "Cash", icon: Banknote, desc: "Pay at counter" },
+type CheckoutStep = "review" | "pickup" | "payment";
+const PICKUP_SLOTS = [
+  "ASAP",
+  "11:00 AM",
+  "11:30 AM",
+  "12:00 PM",
+  "12:30 PM",
+  "1:00 PM",
+  "1:30 PM",
+  "2:00 PM",
 ];
 
-const PICKUP_SLOTS = ["ASAP", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM", "2:00 PM"];
+function errorMessage(error: unknown): string {
+  return error instanceof ConvexError
+    ? String(error.data)
+    : error instanceof Error
+      ? error.message
+      : "Something went wrong. Please try again.";
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { user } = useUser();
-  const { items, outletId, outletName, subtotal, itemCount, updateQuantity, removeItem, clearCart } = useCart();
-  const canLoadOutlet = outletId ? !outletId.startsWith("outlet_") : false;
-  const liveOutletId = canLoadOutlet && outletId ? (outletId as Id<"outlets">) : null;
+  const cart = useCart();
+  const liveOutletId =
+    cart.outletId && !cart.outletId.startsWith("outlet_")
+      ? (cart.outletId as Id<"outlets">)
+      : null;
   const outlet = useQuery(
     api.outlets.getById,
     liveOutletId ? { id: liveOutletId } : "skip"
-  ) as Outlet | null | undefined;
+  );
   const placeOrder = useMutation(api.orders.place);
-  const tax = calculateTax(subtotal);
+  const initiatePayment = useAction(api.payments.initiatePayment);
+  const verifyPayment = useAction(api.payments.verifyPayment);
+
   const [step, setStep] = useState<CheckoutStep>("review");
   const [pickupSlot, setPickupSlot] = useState("ASAP");
-  const [paymentMethod, setPaymentMethod] = useState("upi");
-  const [promoCode, setPromoCode] = useState("");
-  const [discount, setDiscount] = useState(0);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [pickupToken, setPickupToken] = useState("");
-  const [specialInstructions, setSpecialInstructions] = useState("");
-  const [orderId, setOrderId] = useState<string | null>(null);
+  const [notes, setNotes] = useState("");
+  const [promoInput, setPromoInput] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
+  const [placedOrderId, setPlacedOrderId] = useState<Id<"orders"> | null>(null);
+  const [processing, setProcessing] = useState(false);
 
-  const total = subtotal + tax - discount;
+  const coupon = useQuery(
+    api.coupons.validate,
+    appliedPromo && liveOutletId
+      ? { code: appliedPromo, orderAmount: cart.subtotal, outletId: liveOutletId }
+      : "skip"
+  );
+  const discount = coupon?.valid ? coupon.discount ?? 0 : 0;
+  const tax = calculateTax(cart.subtotal);
+  const estimatedTotal = cart.subtotal + tax - discount;
 
+  const invalidatePlacedOrder = () => setPlacedOrderId(null);
   const applyPromo = () => {
-    if (promoCode.toUpperCase() === "SWIFT10") {
-      const disc = Math.round(subtotal * 0.1);
-      setDiscount(disc);
-      toast.success(`Promo applied! ₹${disc} off`);
-    } else {
-      toast.error("Invalid promo code");
-    }
-  };
-
-  const processPayment = async () => {
-    if (!liveOutletId || !outlet) {
-      toast.error("Outlet details are still loading");
+    const code = promoInput.trim().toUpperCase();
+    if (!code) {
+      toast.error("Enter a promo code first.");
       return;
     }
+    setAppliedPromo(code);
+    invalidatePlacedOrder();
+  };
 
-    setIsProcessing(true);
+  const pay = async () => {
+    if (!liveOutletId || !outlet) {
+      toast.error("Outlet details are unavailable.");
+      return;
+    }
+    if (!window.Razorpay) {
+      toast.error("Razorpay Checkout is still loading. Please try again.");
+      return;
+    }
+    setProcessing(true);
     try {
-      const token = generatePickupToken();
-      const newOrderId = await placeOrder({
-        userId: user?.id ?? "guest",
-        outletId: liveOutletId,
-        outletName: outlet.name,
-        outletImage: outlet.image,
-        items: items.map(({ specialInstructions: _specialInstructions, ...item }) => item),
-        subtotal,
-        tax,
-        discount,
-        totalAmount: total,
-        couponCode: discount > 0 ? promoCode.toUpperCase() : undefined,
-        pickupSlot,
-        pickupToken: token,
-        notes: specialInstructions || undefined,
-        paymentStatus: paymentMethod === "cash" ? "pending" : "completed",
-      });
+      let orderId = placedOrderId;
+      if (!orderId) {
+        orderId = await placeOrder({
+          outletId: liveOutletId,
+          items: cart.items.map((item) => ({
+            menuItemId: item.menuItemId as Id<"menuItems">,
+            quantity: item.quantity,
+            customizations: item.customizations.map((customization) => ({
+              name: customization.name,
+              selected: customization.selected,
+            })),
+          })),
+          couponCode: appliedPromo ?? undefined,
+          pickupSlot,
+          notes: notes.trim() || undefined,
+        });
+        setPlacedOrderId(orderId);
+      }
 
-      setPickupToken(token);
-      setOrderId(newOrderId);
-      setStep("confirmation");
-      toast.success("Order placed");
-    } catch {
-      toast.error("Could not place your order");
-    } finally {
-      setIsProcessing(false);
+      const checkout = await initiatePayment({ orderId });
+      const razorpay = new window.Razorpay({
+        key: checkout.keyId,
+        amount: checkout.amountInPaise,
+        currency: checkout.currency,
+        name: "SwiftTray",
+        description: `Order from ${checkout.outletName}`,
+        order_id: checkout.razorpayOrderId,
+        prefill: checkout.customer,
+        notes: { swifttrayOrderId: String(orderId) },
+        theme: { color: "#5DE5D5" },
+        handler: async (response) => {
+          try {
+            await verifyPayment({
+              orderId,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            });
+            cart.clearCart();
+            router.push(`/payment/callback?order=${orderId}`);
+          } catch (error) {
+            toast.error(errorMessage(error));
+            setProcessing(false);
+          }
+        },
+        modal: { ondismiss: () => setProcessing(false) },
+      });
+      razorpay.on("payment.failed", () => {
+        toast.error("Payment was not completed. You can retry this saved order.");
+        setProcessing(false);
+      });
+      razorpay.open();
+    } catch (error) {
+      toast.error(errorMessage(error));
+      setProcessing(false);
     }
   };
 
-  if (items.length === 0 && step !== "confirmation") {
+  if (cart.items.length === 0) {
     return (
       <>
         <Navbar />
         <main className="flex-1 pt-24 pb-20">
           <div className="max-w-md mx-auto px-4 text-center">
             <div className="w-20 h-20 rounded-2xl neu-pressed flex items-center justify-center mx-auto mb-4">
-              <ShoppingBag className="w-10 h-10 text-muted-foreground" />
+              <ShoppingBag className="w-9 h-9 text-muted-foreground" />
             </div>
-            <h1 className="text-2xl font-bold mb-2">Your cart is empty</h1>
-            <p className="text-muted-foreground mb-6">Add items from an outlet to get started</p>
-            <Link href="/outlets">
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                className="px-6 py-3 rounded-xl neu-btn-primary text-[#1A2E35] font-semibold"
-              >
-                Browse Outlets
-              </motion.button>
+            <h1 className="text-2xl font-bold">Your cart is empty</h1>
+            <p className="text-sm text-muted-foreground mt-2 mb-6">Add an item from an open outlet to continue.</p>
+            <Link href="/outlets" className="inline-flex min-h-11 px-6 rounded-xl neu-btn-primary items-center font-semibold text-[#1A2E35]">
+              Browse outlets
             </Link>
           </div>
         </main>
@@ -131,404 +186,184 @@ export default function CheckoutPage() {
 
   return (
     <>
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
       <Navbar />
-      <main className="flex-1 pt-20 pb-20 md:pb-8">
+      <main className="flex-1 pt-20 pb-24">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 space-y-6">
-          {/* Header */}
-          {step !== "confirmation" && (
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => {
-                  if (step === "review") router.back();
-                  else if (step === "details") setStep("review");
-                  else if (step === "payment") setStep("details");
-                }}
-                className="w-9 h-9 rounded-full neu-btn flex items-center justify-center"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-              <div>
-                <h1 className="text-lg font-bold">Checkout</h1>
-                <p className="text-xs text-muted-foreground">
-                  {outletName && `From ${outletName}`}
-                </p>
-              </div>
+          <header className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => step === "review" ? router.back() : setStep(step === "payment" ? "pickup" : "review")}
+              aria-label="Go back"
+              className="w-11 h-11 rounded-xl neu-btn flex items-center justify-center"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-extrabold">Secure checkout</h1>
+              <p className="text-sm text-muted-foreground">{cart.outletName}</p>
             </div>
-          )}
+          </header>
 
-          {/* Stepper */}
-          {step !== "confirmation" && (
-            <div className="flex items-center gap-2">
-              {(["review", "details", "payment"] as CheckoutStep[]).map((s, i) => (
-                <div key={s} className="flex items-center gap-2 flex-1">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                      step === s
-                        ? "gradient-mint text-[#1A2E35] shadow-neu-sm"
-                        : i < ["review", "details", "payment"].indexOf(step)
-                        ? "gradient-mint text-[#1A2E35] shadow-neu-sm"
-                        : "neu-pressed-sm text-muted-foreground"
-                    }`}
-                  >
-                    {i < ["review", "details", "payment"].indexOf(step) ? (
-                      <CheckCircle className="w-4 h-4" />
-                    ) : (
-                      i + 1
-                    )}
-                  </div>
-                  {i < 2 && (
-                    <div
-                      className={`flex-1 h-0.5 rounded-full ${
-                        i < ["review", "details", "payment"].indexOf(step)
-                          ? "bg-primary"
-                          : "shadow-[inset_1px_1px_2px_rgba(163,177,198,0.4),inset_-1px_-1px_2px_#FFFFFF]"
-                      }`}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          <AnimatePresence mode="wait">
-            {/* ──────── STEP 1: REVIEW ──────── */}
-            {step === "review" && (
-              <motion.div
-                key="review"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-4"
+          <ol className="grid grid-cols-3 gap-2" aria-label="Checkout progress">
+            {(["review", "pickup", "payment"] as const).map((value, index) => (
+              <li
+                key={value}
+                className={`min-h-10 rounded-xl flex items-center justify-center text-xs font-semibold ${
+                  value === step ? "neu-pressed-sm text-primary" : "text-muted-foreground"
+                }`}
               >
-                <div className="neu-card-static p-5 space-y-4">
-                  <h2 className="text-sm font-bold">Your Items</h2>
-                  {items.map((item) => (
-                    <div key={item.menuItemId} className="flex gap-3 items-start">
-                      <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 shadow-neu-sm">
-                        <Image src={item.image} alt={item.name} fill className="object-cover" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-semibold truncate">{item.name}</h3>
-                        {item.customizations.length > 0 && (
-                          <p className="text-xs text-muted-foreground truncate">
-                            {item.customizations.map((c) => c.selected).join(", ")}
-                          </p>
-                        )}
-                        <div className="flex items-center justify-between mt-1.5">
-                          <span className="text-sm font-bold gradient-text">
-                            {formatPrice(
-                              (item.price + item.customizations.reduce((s, c) => s + c.price, 0)) * item.quantity
-                            )}
-                          </span>
-                          <div className="neu-stepper">
-                            <button
-                              onClick={() => updateQuantity(item.menuItemId, item.quantity - 1)}
-                              className="neu-stepper-btn w-7 h-7"
-                            >
-                              <Minus className="w-3 h-3" />
-                            </button>
-                            <span className="text-sm font-semibold w-5 text-center">{item.quantity}</span>
-                            <button
-                              onClick={() => updateQuantity(item.menuItemId, item.quantity + 1)}
-                              className="neu-stepper-btn w-7 h-7 gradient-mint text-[#1A2E35]"
-                            >
-                              <Plus className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => removeItem(item.menuItemId)}
-                        className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                {index + 1}. {value === "pickup" ? "Pickup" : value[0].toUpperCase() + value.slice(1)}
+              </li>
+            ))}
+          </ol>
+
+          {step === "review" && (
+            <motion.section initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+              <div className="neu-card-static p-5 space-y-4">
+                <h2 className="font-bold">Your items</h2>
+                {cart.items.map((item) => (
+                  <div key={`${item.menuItemId}-${JSON.stringify(item.customizations)}`} className="flex gap-3 items-center">
+                    <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
+                      <Image src={item.image} alt={item.name} fill sizes="56px" className="object-cover" />
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate">{item.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {item.customizations.map((value) => value.selected).join(", ") || "Standard"}
+                      </p>
+                      <p className="text-sm font-bold gradient-text mt-1">{formatPrice((item.price + item.customizations.reduce((sum, customization) => sum + customization.price, 0)) * item.quantity)}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => { cart.updateQuantity(cartLineKey(item), item.quantity - 1); invalidatePlacedOrder(); }}
+                        aria-label={`Decrease ${item.name} quantity`}
+                        className="w-10 h-10 rounded-lg neu-btn flex items-center justify-center"
+                      ><Minus className="w-3 h-3" /></button>
+                      <span className="w-7 text-center text-sm font-semibold">{item.quantity}</span>
+                      <button
+                        type="button"
+                        onClick={() => { cart.updateQuantity(cartLineKey(item), item.quantity + 1); invalidatePlacedOrder(); }}
+                        aria-label={`Increase ${item.name} quantity`}
+                        className="w-10 h-10 rounded-lg neu-btn flex items-center justify-center"
+                      ><Plus className="w-3 h-3" /></button>
+                      <button
+                        type="button"
+                        onClick={() => { cart.removeItem(cartLineKey(item)); invalidatePlacedOrder(); }}
+                        aria-label={`Remove ${item.name}`}
+                        className="w-10 h-10 rounded-lg text-[#E85D75] flex items-center justify-center"
+                      ><X className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="neu-card-static p-5">
+                <label htmlFor="promo" className="text-sm font-bold flex items-center gap-2">
+                  <Ticket className="w-4 h-4 text-primary" /> Promo code
+                </label>
+                <div className="flex gap-2 mt-3">
+                  <input
+                    id="promo"
+                    value={promoInput}
+                    onChange={(event) => setPromoInput(event.target.value)}
+                    maxLength={30}
+                    className="flex-1 rounded-xl neu-input text-sm"
+                    placeholder="Enter code"
+                  />
+                  <button type="button" onClick={applyPromo} className="min-h-11 px-4 rounded-xl neu-btn font-semibold text-sm">Apply</button>
+                </div>
+                {appliedPromo && coupon && (
+                  <p className={`text-xs mt-2 ${coupon.valid ? "text-emerald-600" : "text-[#E85D75]"}`} role="status">
+                    {coupon.valid ? `${appliedPromo} applied for ${formatPrice(discount)} off.` : coupon.error}
+                  </p>
+                )}
+              </div>
+
+              <PriceSummary subtotal={cart.subtotal} tax={tax} discount={discount} total={estimatedTotal} />
+              <button type="button" onClick={() => setStep("pickup")} className="w-full min-h-12 rounded-2xl neu-btn-primary text-[#1A2E35] font-bold flex items-center justify-center gap-2">
+                Continue <ArrowRight className="w-4 h-4" />
+              </button>
+            </motion.section>
+          )}
+
+          {step === "pickup" && (
+            <motion.section initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+              <div className="neu-card-static p-5">
+                <h2 className="font-bold flex items-center gap-2"><Clock className="w-4 h-4 text-primary" /> Pickup time</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
+                  {PICKUP_SLOTS.map((slot) => (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => { setPickupSlot(slot); invalidatePlacedOrder(); }}
+                      aria-pressed={pickupSlot === slot}
+                      className={`min-h-11 rounded-xl text-sm font-medium ${pickupSlot === slot ? "neu-pressed-sm text-primary" : "neu-btn"}`}
+                    >{slot}</button>
                   ))}
                 </div>
+              </div>
+              <div className="neu-card-static p-5">
+                <label htmlFor="notes" className="font-bold flex items-center gap-2"><MapPin className="w-4 h-4 text-primary" /> Pickup notes</label>
+                <textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(event) => { setNotes(event.target.value); invalidatePlacedOrder(); }}
+                  maxLength={500}
+                  rows={3}
+                  placeholder="Allergies or preparation notes"
+                  className="w-full mt-3 rounded-xl neu-input text-sm resize-none"
+                />
+                <p className="text-xs text-muted-foreground mt-2">Pickup at {cart.outletName} · Main counter</p>
+              </div>
+              <button type="button" onClick={() => setStep("payment")} className="w-full min-h-12 rounded-2xl neu-btn-primary text-[#1A2E35] font-bold flex items-center justify-center gap-2">
+                Review payment <ArrowRight className="w-4 h-4" />
+              </button>
+            </motion.section>
+          )}
 
-                {/* Special Instructions */}
-                <div className="neu-card-static p-5">
-                  <h2 className="text-sm font-bold mb-2">Special Instructions</h2>
-                  <textarea
-                    value={specialInstructions}
-                    onChange={(e) => setSpecialInstructions(e.target.value)}
-                    placeholder="Allergies, preferences..."
-                    rows={2}
-                    className="w-full rounded-xl neu-input text-sm resize-none"
-                  />
+          {step === "payment" && (
+            <motion.section initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+              <div className="neu-card-static p-5 flex gap-4 items-start">
+                <div className="w-12 h-12 rounded-xl gradient-mint flex items-center justify-center flex-shrink-0">
+                  <CreditCard className="w-5 h-5 text-[#1A2E35]" />
                 </div>
-
-                {/* Promo Code */}
-                <div className="neu-card-static p-5">
-                  <h2 className="text-sm font-bold mb-2 flex items-center gap-2">
-                    <Ticket className="w-4 h-4 text-primary" /> Promo Code
-                  </h2>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={promoCode}
-                      onChange={(e) => setPromoCode(e.target.value)}
-                      placeholder="Enter code (try SWIFT10)"
-                      className="flex-1 rounded-xl neu-input text-sm"
-                    />
-                    <button
-                      onClick={applyPromo}
-                      className="px-4 py-2 rounded-xl neu-btn text-sm font-medium text-primary"
-                    >
-                      Apply
-                    </button>
-                  </div>
-                </div>
-
-                {/* Price Summary */}
-                <div className="neu-card-static p-5 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal ({itemCount} items)</span>
-                    <span>{formatPrice(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Taxes (5%)</span>
-                    <span>{formatPrice(tax)}</span>
-                  </div>
-                  {discount > 0 && (
-                    <div className="flex justify-between text-sm text-[#68D89B]">
-                      <span>Discount</span>
-                      <span>-{formatPrice(discount)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between font-bold pt-2 border-t border-[#C8D0E0]">
-                    <span>Total</span>
-                    <span className="gradient-text">{formatPrice(total)}</span>
-                  </div>
-                </div>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setStep("details")}
-                  className="w-full py-3.5 rounded-2xl neu-btn-primary text-[#1A2E35] font-bold flex items-center justify-center gap-2"
-                >
-                  Continue <ArrowRight className="w-4 h-4" />
-                </motion.button>
-              </motion.div>
-            )}
-
-            {/* ──────── STEP 2: DETAILS ──────── */}
-            {step === "details" && (
-              <motion.div
-                key="details"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-4"
-              >
-                {/* Pickup Slot */}
-                <div className="neu-card-static p-5">
-                  <h2 className="text-sm font-bold mb-3 flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-primary" /> Pickup Time
-                  </h2>
-                  <div className="grid grid-cols-4 gap-2">
-                    {PICKUP_SLOTS.map((slot) => (
-                      <button
-                        key={slot}
-                        onClick={() => setPickupSlot(slot)}
-                        className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
-                          pickupSlot === slot
-                            ? "neu-pressed-sm text-primary font-semibold"
-                            : "neu-raised-sm text-foreground"
-                        }`}
-                      >
-                        {slot}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Pickup Location */}
-                <div className="neu-card-static p-5">
-                  <h2 className="text-sm font-bold mb-2 flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-primary" /> Pickup Location
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    {outletName} — Main Counter
-                  </p>
-                </div>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setStep("payment")}
-                  className="w-full py-3.5 rounded-2xl neu-btn-primary text-[#1A2E35] font-bold flex items-center justify-center gap-2"
-                >
-                  Continue to Payment <ArrowRight className="w-4 h-4" />
-                </motion.button>
-              </motion.div>
-            )}
-
-            {/* ──────── STEP 3: PAYMENT ──────── */}
-            {step === "payment" && (
-              <motion.div
-                key="payment"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-4"
-              >
-                <div className="neu-card-static p-5">
-                  <h2 className="text-sm font-bold mb-3 flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-primary" /> Payment Method
-                  </h2>
-                  <div className="space-y-2">
-                    {PAYMENT_METHODS.map((method) => {
-                      const Icon = method.icon;
-                      return (
-                        <button
-                          key={method.id}
-                          onClick={() => setPaymentMethod(method.id)}
-                          className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all ${
-                            paymentMethod === method.id
-                              ? "neu-pressed-sm border-l-4 border-primary"
-                              : "neu-raised-sm"
-                          }`}
-                        >
-                          <Icon className="w-5 h-5 text-primary flex-shrink-0" />
-                          <div className="text-left">
-                            <p className="text-sm font-semibold">{method.label}</p>
-                            <p className="text-xs text-muted-foreground">{method.desc}</p>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Order Summary */}
-                <div className="neu-card-static p-5 space-y-2">
-                  <h2 className="text-sm font-bold mb-2">Order Summary</h2>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{itemCount} items</span>
-                    <span>{formatPrice(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Taxes</span>
-                    <span>{formatPrice(tax)}</span>
-                  </div>
-                  {discount > 0 && (
-                    <div className="flex justify-between text-sm text-[#68D89B]">
-                      <span>Discount</span>
-                      <span>-{formatPrice(discount)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between font-bold pt-2 border-t border-[#C8D0E0]">
-                    <span>Total</span>
-                    <span className="text-xl gradient-text">{formatPrice(total)}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground justify-center">
-                  <Shield className="w-3 h-3" /> Secured by SwiftTray
-                </div>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  disabled={isProcessing}
-                  onClick={processPayment}
-                  className="w-full py-4 rounded-2xl neu-btn-primary text-[#1A2E35] font-bold flex items-center justify-center gap-2 disabled:opacity-70"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" /> Processing...
-                    </>
-                  ) : (
-                    <>Pay {formatPrice(total)}</>
-                  )}
-                </motion.button>
-              </motion.div>
-            )}
-
-            {/* ──────── STEP 4: CONFIRMATION ──────── */}
-            {step === "confirmation" && (
-              <motion.div
-                key="confirmation"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="space-y-6 text-center py-6"
-              >
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 200 }}
-                  className="w-24 h-24 rounded-3xl gradient-success flex items-center justify-center mx-auto shadow-mint-glow"
-                >
-                  <CheckCircle className="w-12 h-12 text-white" />
-                </motion.div>
-
                 <div>
-                  <h1 className="text-2xl font-extrabold mb-1">Order Placed! 🎉</h1>
-                  <p className="text-muted-foreground">
-                    Your order has been confirmed
-                  </p>
+                  <h2 className="font-bold">Pay securely with Razorpay</h2>
+                  <p className="text-sm text-muted-foreground mt-1">UPI, cards, netbanking, and supported wallets are available in Razorpay Checkout.</p>
                 </div>
-
-                <div className="neu-card-static p-6">
-                  <p className="text-xs text-muted-foreground mb-1">Your Pickup Token</p>
-                  <motion.p
-                    initial={{ scale: 0.5 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-                    className="text-5xl font-extrabold gradient-text tracking-[0.25em]"
-                  >
-                    {pickupToken}
-                  </motion.p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Show this at the pickup counter
-                  </p>
-                </div>
-
-                <div className="neu-card-static p-5 text-left space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Pickup Time</span>
-                    <span className="font-medium">{pickupSlot}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Outlet</span>
-                    <span className="font-medium">{outletName}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Amount Paid</span>
-                    <span className="font-bold gradient-text">{formatPrice(total)}</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <Link href={orderId ? `/orders/${orderId}` : "/orders"} className="flex-1">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="w-full py-3 rounded-xl neu-btn-primary text-[#1A2E35] font-semibold"
-                    >
-                      Track Order
-                    </motion.button>
-                  </Link>
-                  <Link href="/outlets" className="flex-1">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => clearCart()}
-                      className="w-full py-3 rounded-xl neu-btn font-semibold text-foreground"
-                    >
-                      Continue Browsing
-                    </motion.button>
-                  </Link>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </div>
+              <PriceSummary subtotal={cart.subtotal} tax={tax} discount={discount} total={estimatedTotal} />
+              <div className="flex items-start gap-2 text-xs text-muted-foreground px-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                The backend recalculates menu prices, coupon, tax, and total before creating the Razorpay order.
+              </div>
+              <button
+                type="button"
+                onClick={pay}
+                disabled={processing}
+                className="w-full min-h-12 rounded-2xl neu-btn-primary text-[#1A2E35] font-bold flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                {processing ? "Opening Razorpay…" : `Pay ${formatPrice(estimatedTotal)}`}
+              </button>
+            </motion.section>
+          )}
         </div>
       </main>
       <MobileNav />
     </>
+  );
+}
+
+function PriceSummary({ subtotal, tax, discount, total }: { subtotal: number; tax: number; discount: number; total: number }) {
+  return (
+    <div className="neu-card-static p-5 space-y-2">
+      <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span>{formatPrice(subtotal)}</span></div>
+      <div className="flex justify-between text-sm"><span className="text-muted-foreground">GST (5%)</span><span>{formatPrice(tax)}</span></div>
+      {discount > 0 && <div className="flex justify-between text-sm text-emerald-600"><span>Discount</span><span>-{formatPrice(discount)}</span></div>}
+      <div className="flex justify-between font-bold pt-3 mt-2 border-t border-[#C8D0E0]"><span>Estimated total</span><span className="gradient-text">{formatPrice(total)}</span></div>
+    </div>
   );
 }

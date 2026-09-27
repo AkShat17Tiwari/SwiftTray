@@ -1,127 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Ticket, MessageSquare, AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { useMutation, useQuery } from "convex/react";
+import { CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
+import { api } from "@convex/_generated/api";
+import type { Doc, Id } from "@convex/_generated/dataModel";
+import { formatRelativeTime } from "@/lib/utils";
 
-const TICKETS = [
-  { id: "TK-001", user: "Arjun Patel", subject: "Order charged but not received", outlet: "Dragon Bowl", status: "open", priority: "high", time: "2h ago", orderId: "ST-B4K9" },
-  { id: "TK-002", user: "Sneha Reddy", subject: "Wrong item delivered", outlet: "Spice Junction", status: "in_progress", priority: "medium", time: "5h ago", orderId: "ST-C7L2" },
-  { id: "TK-003", user: "Vikram Singh", subject: "App crashing on checkout", outlet: null, status: "open", priority: "urgent", time: "1h ago", orderId: null },
-  { id: "TK-004", user: "Ananya Sharma", subject: "Refund not processed", outlet: "South Express", status: "resolved", priority: "medium", time: "1d ago", orderId: "ST-A3M5" },
-  { id: "TK-005", user: "Rohan Kumar", subject: "Allergic ingredients not listed", outlet: "Fresh Bowl", status: "open", priority: "high", time: "3h ago", orderId: "ST-D9N1" },
-];
-
-const PRIORITY_COLORS: Record<string, string> = {
-  urgent: "bg-red-500/10 text-red-500 border-red-500/20",
-  high: "bg-amber-500/10 text-amber-500 border-amber-500/20",
-  medium: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-  low: "bg-gray-500/10 text-gray-400 border-gray-500/20",
-};
-
-const STATUS_ICONS: Record<string, typeof AlertCircle> = {
-  open: AlertCircle,
-  in_progress: Clock,
-  resolved: CheckCircle2,
-  closed: CheckCircle2,
-};
+type TicketStatus = Doc<"supportTickets">["status"];
+const filters: (TicketStatus | "all")[] = ["all", "open", "in_progress", "resolved", "closed"];
 
 export default function AdminTicketsPage() {
-  const [filter, setFilter] = useState<"all" | "open" | "in_progress" | "resolved">("all");
-  const filtered = filter === "all" ? TICKETS : TICKETS.filter(t => t.status === filter);
-
-  return (
-    <div className="space-y-6">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-extrabold">Support <span className="gradient-text">Tickets</span></h1>
-        <p className="text-sm text-muted-foreground">Resolve student and vendor issues</p>
-      </motion.div>
-
-      {/* Summary */}
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: "Open", count: TICKETS.filter(t => t.status === "open").length, color: "text-red-500" },
-          { label: "In Progress", count: TICKETS.filter(t => t.status === "in_progress").length, color: "text-amber-500" },
-          { label: "Resolved", count: TICKETS.filter(t => t.status === "resolved").length, color: "text-emerald-500" },
-          { label: "Total", count: TICKETS.length, color: "text-foreground" },
-        ].map((s) => (
-          <div key={s.label} className="glass-card p-3 text-center">
-            <p className={`text-lg font-extrabold ${s.color}`}>{s.count}</p>
-            <p className="text-[10px] text-muted-foreground">{s.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div className="flex gap-2">
-        {(["all", "open", "in_progress", "resolved"] as const).map(f => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-              filter === f ? "bg-primary/10 text-primary border border-primary/20" : "bg-secondary/50 text-muted-foreground border border-transparent"
-            }`}
-          >
-            {f === "all" ? "All" : f === "in_progress" ? "In Progress" : f.charAt(0).toUpperCase() + f.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      {/* Tickets */}
-      <div className="space-y-3">
-        {filtered.map((ticket, i) => {
-          const StatusIcon = STATUS_ICONS[ticket.status] || AlertCircle;
-          return (
-            <motion.div
-              key={ticket.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04 }}
-              className={`glass-card p-4 border-l-2 ${
-                ticket.priority === "urgent" ? "border-l-red-500" :
-                ticket.priority === "high" ? "border-l-amber-500" : "border-l-blue-500"
-              }`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-mono font-bold text-muted-foreground">{ticket.id}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${PRIORITY_COLORS[ticket.priority]}`}>
-                      {ticket.priority}
-                    </span>
-                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                      <StatusIcon className="w-3 h-3" />
-                      {ticket.status === "in_progress" ? "In Progress" : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
-                    </span>
-                  </div>
-                  <p className="text-sm font-medium">{ticket.subject}</p>
-                  <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                    <span>👤 {ticket.user}</span>
-                    {ticket.outlet && <span>🏪 {ticket.outlet}</span>}
-                    {ticket.orderId && <span>🎫 {ticket.orderId}</span>}
-                    <span>⏰ {ticket.time}</span>
-                  </div>
-                </div>
-                <div className="flex gap-1.5">
-                  {ticket.status === "open" && (
-                    <button className="px-3 py-1.5 rounded-lg gradient-primary text-white text-xs font-medium">
-                      Assign
-                    </button>
-                  )}
-                  {ticket.status === "in_progress" && (
-                    <button className="px-3 py-1.5 rounded-lg gradient-success text-white text-xs font-medium">
-                      Resolve
-                    </button>
-                  )}
-                  <button className="px-3 py-1.5 rounded-lg bg-secondary text-xs font-medium flex items-center gap-1">
-                    <MessageSquare className="w-3 h-3" /> Reply
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
-    </div>
-  );
+  const [filter, setFilter] = useState<TicketStatus | "all">("all");
+  const tickets = useQuery(api.supportTickets.listAll, filter === "all" ? {} : { status: filter });
+  const update = useMutation(api.supportTickets.updateStatus);
+  const change = async (id: Id<"supportTickets">, status: TicketStatus) => {
+    const resolution = ["resolved", "closed"].includes(status) ? window.prompt("Resolution note")?.trim() : undefined;
+    if (["resolved", "closed"].includes(status) && !resolution) return;
+    try { await update({ id, status, resolution }); toast.success("Ticket updated"); } catch (error) { toast.error(error instanceof Error ? error.message : "Could not update ticket"); }
+  };
+  return <div className="space-y-6"><header><h1 className="text-2xl font-extrabold">Support <span className="gradient-text">Tickets</span></h1><p className="text-sm text-muted-foreground">Live student and vendor requests</p></header><div className="flex gap-2 overflow-x-auto">{filters.map((value) => <button type="button" key={value} onClick={() => setFilter(value)} aria-pressed={filter === value} className={`min-h-10 px-3 rounded-full text-xs capitalize whitespace-nowrap ${filter === value ? "bg-primary/10 text-primary" : "bg-secondary/50 text-muted-foreground"}`}>{value.replace("_", " ")}</button>)}</div><div className="space-y-3">{tickets === undefined ? <p className="py-12 text-center text-sm text-muted-foreground">Loading tickets…</p> : tickets.length === 0 ? <p className="py-12 text-center text-sm text-muted-foreground">No tickets in this queue.</p> : tickets.map((ticket) => <article key={ticket._id} className="glass-card p-4"><div className="flex flex-col sm:flex-row gap-4 justify-between"><div><div className="flex flex-wrap gap-2 items-center"><span className="font-mono text-xs">#{ticket._id.slice(-6)}</span><span className="px-2 py-1 rounded-full bg-secondary text-[10px] uppercase">{ticket.priority}</span><span className="text-xs text-muted-foreground flex items-center gap-1">{ticket.status === "resolved" ? <CheckCircle2 className="w-3 h-3"/> : ticket.status === "in_progress" ? <Clock className="w-3 h-3"/> : <AlertCircle className="w-3 h-3"/>}{ticket.status.replace("_", " ")}</span></div><h2 className="font-bold mt-2">{ticket.subject}</h2><p className="text-sm text-muted-foreground mt-1">{ticket.description}</p><p className="text-xs text-muted-foreground mt-2">{ticket.userName} · {formatRelativeTime(ticket._creationTime)}</p>{ticket.resolution && <p className="text-sm mt-3 p-3 rounded-xl bg-emerald-500/10"><strong>Resolution:</strong> {ticket.resolution}</p>}</div><div className="flex sm:flex-col gap-2 shrink-0">{ticket.status === "open" && <button type="button" onClick={() => change(ticket._id, "in_progress")} className="min-h-10 px-3 rounded-xl bg-primary/10 text-primary text-xs font-semibold">Start work</button>}{!(["resolved", "closed"] as TicketStatus[]).includes(ticket.status) && <button type="button" onClick={() => change(ticket._id, "resolved")} className="min-h-10 px-3 rounded-xl bg-emerald-500/10 text-emerald-700 text-xs font-semibold">Resolve</button>}{ticket.status === "resolved" && <button type="button" onClick={() => change(ticket._id, "closed")} className="min-h-10 px-3 rounded-xl bg-secondary text-xs font-semibold">Close</button>}</div></div></article>)}</div></div>;
 }

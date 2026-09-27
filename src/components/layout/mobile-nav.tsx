@@ -27,7 +27,7 @@ export function MobileNav() {
       initial={{ y: 100 }}
       animate={{ y: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#E4EBF5] shadow-[0_-4px_14px_rgba(163,177,198,0.5)]"
+      className="dashboard-mobile-nav md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background"
     >
       <div className="flex items-center justify-around h-16 px-2">
         {MOBILE_NAV_ITEMS.map((item) => {
@@ -43,7 +43,9 @@ export function MobileNav() {
               href={item.href}
               className="relative flex flex-col items-center gap-0.5 py-1 px-3"
             >
-              <div className={cn(
+              <div
+                id={item.label === "Cart" ? "cart-fly-target-mobile" : undefined}
+                className={cn(
                 "relative w-10 h-10 rounded-xl flex items-center justify-center transition-all",
                 isActive
                   ? "neu-pressed-sm"

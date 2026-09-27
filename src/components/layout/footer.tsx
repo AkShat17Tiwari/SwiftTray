@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { ChefHat, Globe, MessageCircle, ExternalLink, Heart } from "lucide-react";
+import { ChefHat, Heart } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#E4EBF5]">
+    <footer className="bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Top divider - neumorphic embossed line */}
         <div className="h-[2px] mb-12 rounded-full shadow-[inset_1px_1px_2px_rgba(163,177,198,0.5),inset_-1px_-1px_2px_#FFFFFF]" />
@@ -36,7 +36,7 @@ export function Footer() {
                 { href: "/outlets", label: "All Outlets" },
                 { href: "/dashboard", label: "Dashboard" },
                 { href: "/orders", label: "My Orders" },
-                { href: "/admin", label: "Vendor Panel" },
+                { href: "/vendor", label: "Vendor Panel" },
               ].map((link) => (
                 <li key={link.href}>
                   <Link
@@ -55,10 +55,9 @@ export function Footer() {
             <h3 className="text-sm font-semibold mb-4">Support</h3>
             <ul className="space-y-2.5">
               {[
-                { href: "#faq", label: "FAQ" },
-                { href: "#", label: "Help Center" },
-                { href: "#", label: "Contact Us" },
-                { href: "#", label: "Report an Issue" },
+                { href: "/support", label: "Help Center" },
+                { href: "/support", label: "Contact Support" },
+                { href: "/support", label: "Report an Issue" },
               ].map((link) => (
                 <li key={link.label}>
                   <Link
@@ -77,10 +76,10 @@ export function Footer() {
             <h3 className="text-sm font-semibold mb-4">For Vendors</h3>
             <ul className="space-y-2.5">
               {[
-                { href: "/admin", label: "Vendor Dashboard" },
-                { href: "#", label: "Register Outlet" },
-                { href: "#", label: "Partner Benefits" },
-                { href: "#", label: "Analytics" },
+                { href: "/vendor", label: "Vendor Dashboard" },
+                { href: "/vendor/access", label: "Request Access" },
+                { href: "/vendor/menu", label: "Manage Menu" },
+                { href: "/vendor/analytics", label: "Analytics" },
               ].map((link) => (
                 <li key={link.label}>
                   <Link
@@ -105,22 +104,6 @@ export function Footer() {
             <Heart className="w-3.5 h-3.5 text-[#FF8A80] fill-[#FF8A80]" /> for campus life.
           </p>
 
-          <div className="flex items-center gap-3">
-            {[
-              { icon: MessageCircle, href: "#", label: "Twitter" },
-              { icon: ExternalLink, href: "#", label: "Instagram" },
-              { icon: Globe, href: "#", label: "GitHub" },
-            ].map(({ icon: Icon, href, label }) => (
-              <Link
-                key={label}
-                href={href}
-                className="w-9 h-9 rounded-full neu-btn flex items-center justify-center text-muted-foreground hover:text-primary"
-                aria-label={label}
-              >
-                <Icon className="w-4 h-4" />
-              </Link>
-            ))}
-          </div>
         </div>
       </div>
     </footer>

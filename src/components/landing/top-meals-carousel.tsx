@@ -4,13 +4,16 @@ import { useRef } from "react";
 import { useQuery } from "convex/react";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Plus, Star, Clock, ArrowRight, ArrowLeft } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import { formatPrice } from "@/lib/utils";
+import { flyToCart } from "@/lib/fly-to-cart";
 import { useCart } from "@/hooks/use-cart";
 import type { MenuItem, Outlet } from "@/types";
 
 export function TopMealsCarousel() {
+  const router = useRouter();
   const trending =
     (useQuery(api.menuItems.getTrending, { limit: 8 }) as
       | MenuItem[]
@@ -47,12 +50,14 @@ export function TopMealsCarousel() {
           <div className="hidden md:flex items-center gap-2">
             <button
               onClick={() => scroll("left")}
+              aria-label="Scroll meals left"
               className="w-10 h-10 rounded-full neu-btn flex items-center justify-center"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
             <button
               onClick={() => scroll("right")}
+              aria-label="Scroll meals right"
               className="w-10 h-10 rounded-full neu-btn flex items-center justify-center"
             >
               <ArrowRight className="w-4 h-4" />
@@ -83,6 +88,7 @@ export function TopMealsCarousel() {
                       src={item.image}
                       alt={item.name}
                       fill
+                      sizes="280px"
                       className="object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
@@ -96,10 +102,17 @@ export function TopMealsCarousel() {
 
                     {/* Quick Add */}
                     <motion.button
+                      type="button"
+                      aria-label={item.customizations.some((group) => group.required) ? `Customize ${item.name}` : `Add ${item.name} to cart`}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      onClick={() => {
+                      onClick={(e) => {
                         if (outlet) {
+                          if (item.customizations.some((group) => group.required)) {
+                            router.push(`/outlets/${outlet.slug}`);
+                            return;
+                          }
+                          flyToCart(e.currentTarget, item.image);
                           addItem(
                             {
                               menuItemId: item._id,

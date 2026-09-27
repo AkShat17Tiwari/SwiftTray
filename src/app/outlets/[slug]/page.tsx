@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, use } from "react";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -12,12 +12,14 @@ import {
 import { api } from "@convex/_generated/api";
 import { FOOD_CATEGORIES } from "@/lib/constants";
 import { formatPrice } from "@/lib/utils";
+import { flyToCart } from "@/lib/fly-to-cart";
 import { useCart } from "@/hooks/use-cart";
 import { Navbar } from "@/components/layout/navbar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { Footer } from "@/components/layout/footer";
 import type { MenuItem, Outlet } from "@/types";
 import type { Id } from "@convex/_generated/dataModel";
+import { toast } from "sonner";
 
 type LiveOutlet = Outlet & { _id: Id<"outlets"> };
 
@@ -45,8 +47,12 @@ function ItemDetailModal({
     0
   );
   const itemTotal = (item.price + customizationTotal) * quantity;
+  const requiredComplete = item.customizations
+    .filter((customization) => customization.required)
+    .every((customization) => selectedCustomizations[customization.name]);
 
-  const handleAdd = () => {
+  const handleAdd = (e: React.MouseEvent<HTMLButtonElement>) => {
+    flyToCart(e.currentTarget, item.image);
     addItem(
       {
         menuItemId: item._id,
@@ -86,6 +92,9 @@ function ItemDetailModal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 100, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="item-detail-title"
             className="fixed inset-x-4 bottom-4 top-[10%] md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-lg md:max-h-[85vh] z-[60] bg-[#E4EBF5] rounded-3xl overflow-hidden flex flex-col shadow-[12px_12px_24px_rgba(163,177,198,0.7),-12px_-12px_24px_#FFFFFF]"
           >
             {/* Image */}
@@ -94,11 +103,14 @@ function ItemDetailModal({
                 src={item.image}
                 alt={item.name}
                 fill
+                sizes="(max-width: 768px) 100vw, 512px"
                 className="object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#E4EBF5] to-transparent" />
               <button
+                type="button"
                 onClick={onClose}
+                aria-label="Close item details"
                 className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center"
               >
                 <X className="w-4 h-4" />
@@ -115,7 +127,7 @@ function ItemDetailModal({
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               <div>
                 <div className="flex items-start justify-between gap-2">
-                  <h2 className="text-xl font-bold">{item.name}</h2>
+                  <h2 id="item-detail-title" className="text-xl font-bold">{item.name}</h2>
                   <span className="text-xl font-extrabold gradient-text flex-shrink-0">
                     {formatPrice(item.price)}
                   </span>
@@ -183,6 +195,7 @@ function ItemDetailModal({
                   <div className="space-y-1.5">
                     {cust.options.map((opt) => (
                       <button
+                        type="button"
                         key={opt.label}
                         onClick={() =>
                           setSelectedCustomizations((prev) => ({
@@ -214,7 +227,9 @@ function ItemDetailModal({
               {/* Quantity — Neumorphic Stepper */}
               <div className="neu-stepper">
                 <button
+                  type="button"
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  aria-label={`Decrease ${item.name} quantity`}
                   className="neu-stepper-btn w-8 h-8"
                 >
                   <Minus className="w-4 h-4" />
@@ -223,7 +238,9 @@ function ItemDetailModal({
                   {quantity}
                 </span>
                 <button
+                  type="button"
                   onClick={() => setQuantity(quantity + 1)}
+                  aria-label={`Increase ${item.name} quantity`}
                   className="neu-stepper-btn w-8 h-8 gradient-mint text-[#1A2E35]"
                 >
                   <Plus className="w-4 h-4" />
@@ -232,10 +249,12 @@ function ItemDetailModal({
 
               {/* Add Button */}
               <motion.button
+                type="button"
+                disabled={!requiredComplete}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleAdd}
-                className="flex-1 py-3 rounded-xl neu-btn-primary text-[#1A2E35] font-semibold flex items-center justify-center gap-2"
+                className="flex-1 min-h-12 rounded-xl neu-btn-primary text-[#1A2E35] font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 Add to Cart • {formatPrice(itemTotal)}
               </motion.button>
@@ -252,7 +271,8 @@ export default function OutletDetailPage({ params }: { params: Promise<{ slug: s
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
-  const { addItem } = useCart();
+  const account = useQuery(api.users.current, {});
+  const toggleFavorite = useMutation(api.users.toggleFavoriteOutlet);
   const outlet = useQuery(api.outlets.getBySlug, { slug }) as
     | LiveOutlet
     | null
@@ -264,6 +284,19 @@ export default function OutletDetailPage({ params }: { params: Promise<{ slug: s
   const menuItems = liveMenuItems ?? [];
   const isLoading =
     outlet === undefined || (outlet !== null && liveMenuItems === undefined);
+
+  const shareOutlet = async () => {
+    try {
+      if (navigator.share) await navigator.share({ title: outlet?.name ?? "SwiftTray outlet", url: window.location.href });
+      else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success("Outlet link copied");
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      toast.error("Could not share this outlet");
+    }
+  };
 
   if (isLoading) {
     return (
@@ -319,8 +352,9 @@ export default function OutletDetailPage({ params }: { params: Promise<{ slug: s
             src={outlet.coverImage}
             alt={outlet.name}
             fill
+            sizes="100vw"
             className="object-cover"
-            priority
+            loading="eager"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#E4EBF5] via-[#E4EBF5]/30 to-transparent" />
 
@@ -348,6 +382,7 @@ export default function OutletDetailPage({ params }: { params: Promise<{ slug: s
                     src={outlet.image}
                     alt={outlet.name}
                     fill
+                    sizes="64px"
                     className="object-cover"
                   />
                 </div>
@@ -382,10 +417,10 @@ export default function OutletDetailPage({ params }: { params: Promise<{ slug: s
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button className="w-10 h-10 rounded-xl neu-btn flex items-center justify-center">
-                  <Heart className="w-4.5 h-4.5" />
+                <button type="button" onClick={() => toggleFavorite({ outletId: String(outlet._id) }).catch(() => toast.error("Sign in to save favorites"))} aria-label={account?.profile?.favoriteOutlets.includes(String(outlet._id)) ? "Remove from favorites" : "Add to favorites"} className="w-10 h-10 rounded-xl neu-btn flex items-center justify-center">
+                  <Heart className={`w-4.5 h-4.5 ${account?.profile?.favoriteOutlets.includes(String(outlet._id)) ? "fill-red-500 text-red-500" : ""}`} />
                 </button>
-                <button className="w-10 h-10 rounded-xl neu-btn flex items-center justify-center">
+                <button type="button" onClick={shareOutlet} aria-label="Share outlet" className="w-10 h-10 rounded-xl neu-btn flex items-center justify-center">
                   <Share2 className="w-4.5 h-4.5" />
                 </button>
               </div>
@@ -435,12 +470,22 @@ export default function OutletDetailPage({ params }: { params: Promise<{ slug: s
                 transition={{ delay: i * 0.03 }}
                 className="neu-card overflow-hidden group cursor-pointer"
                 onClick={() => setSelectedItem(item)}
+                role="button"
+                tabIndex={0}
+                aria-label={`View ${item.name} details`}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setSelectedItem(item);
+                  }
+                }}
               >
                 <div className="relative h-40 overflow-hidden rounded-t-xl">
                   <Image
                     src={item.image}
                     alt={item.name}
                     fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     className="object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
@@ -458,29 +503,6 @@ export default function OutletDetailPage({ params }: { params: Promise<{ slug: s
                       {formatPrice(item.price)}
                     </span>
                   </div>
-
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addItem(
-                        {
-                          menuItemId: item._id,
-                          name: item.name,
-                          price: item.price,
-                          quantity: 1,
-                          image: item.image,
-                          customizations: [],
-                        },
-                        outlet._id,
-                        outlet.name
-                      );
-                    }}
-                    className="absolute bottom-2 right-3 w-9 h-9 rounded-full gradient-mint text-[#1A2E35] flex items-center justify-center shadow-mint-glow opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </motion.button>
 
                   {item.tags.includes("Bestseller") && (
                     <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full gradient-coral text-white text-[9px] font-bold">

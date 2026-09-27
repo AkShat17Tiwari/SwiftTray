@@ -52,13 +52,6 @@ export const NAV_LINKS = [
   { href: "/orders", label: "My Orders" },
 ] as const;
 
-export const STATS = [
-  { label: "Meals Served", value: 50000, suffix: "+" },
-  { label: "Campus Outlets", value: 12, suffix: "" },
-  { label: "Avg Wait Time", value: 8, suffix: " min" },
-  { label: "Happy Students", value: 15000, suffix: "+" },
-] as const;
-
 export const HOW_IT_WORKS = [
   {
     step: 1,
@@ -86,51 +79,6 @@ export const HOW_IT_WORKS = [
   },
 ] as const;
 
-export const TESTIMONIALS = [
-  {
-    name: "Arjun Mehta",
-    department: "Computer Science, 3rd Year",
-    avatar: "AM",
-    rating: 5,
-    comment: "SwiftTray has literally saved me 30 minutes every day. No more standing in long canteen queues during lunch rush!",
-  },
-  {
-    name: "Priya Sharma",
-    department: "MBA, 1st Year",
-    avatar: "PS",
-    rating: 5,
-    comment: "The real-time tracking is amazing. I start walking to the outlet exactly when my food is ready. Perfect timing every time!",
-  },
-  {
-    name: "Rahul Krishnan",
-    department: "Mechanical Eng, 2nd Year",
-    avatar: "RK",
-    rating: 4,
-    comment: "Great variety of outlets and the app is super smooth. The pickup slot feature is genius for tight schedules.",
-  },
-  {
-    name: "Sneha Reddy",
-    department: "Design, 4th Year",
-    avatar: "SR",
-    rating: 5,
-    comment: "Love the UI and the whole experience. Reordering my favorites with one tap is so convenient. Best campus app!",
-  },
-  {
-    name: "Vikram Singh",
-    department: "Electronics, 3rd Year",
-    avatar: "VS",
-    rating: 5,
-    comment: "The vendor panel is fantastic too. Our hostel canteen saw 40% more orders since joining SwiftTray.",
-  },
-  {
-    name: "Ananya Iyer",
-    department: "Biotechnology, 2nd Year",
-    avatar: "AI",
-    rating: 4,
-    comment: "No more guessing if the outlet has my favorite dish. Real-time availability updates are a game changer.",
-  },
-] as const;
-
 export const FAQ_ITEMS = [
   {
     question: "How does SwiftTray work?",
@@ -145,17 +93,17 @@ export const FAQ_ITEMS = [
   {
     question: "Can I cancel my order?",
     answer:
-      "You can cancel your order anytime before the outlet starts preparing it (before 'Preparing' status). Once preparation begins, cancellation may not be possible.",
+      "You can cancel an unpaid order before the outlet accepts it. Paid orders require a support request so an administrator can issue and verify the Razorpay refund.",
   },
   {
     question: "What payment methods are supported?",
     answer:
-      "We support UPI (GPay, PhonePe, Paytm), debit/credit cards, net banking, and campus wallet. You can also pay at the counter if the outlet supports it.",
+      "Online payments use Razorpay Checkout, which can present UPI, supported cards, net banking, and wallets depending on the merchant account configuration.",
   },
   {
     question: "How accurate is the wait time?",
     answer:
-      "Our ETA predictions are based on real-time data from the outlet, including current queue size and prep complexity. They're usually accurate within 2-3 minutes.",
+      "The outlet provides its average preparation time and can add an estimated ready time after accepting a paid order. Treat it as an estimate during busy periods.",
   },
   {
     question: "Can vendors join SwiftTray?",

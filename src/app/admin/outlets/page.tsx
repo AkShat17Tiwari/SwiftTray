@@ -2,16 +2,17 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { motion } from "framer-motion";
-import { Store, MapPin, Star, Clock, Power, Edit2, Eye } from "lucide-react";
+import { MapPin, Star, Clock, Power, Eye } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import { toast } from "sonner";
 import type { Outlet } from "@/types";
 import type { Id } from "@convex/_generated/dataModel";
+import Link from "next/link";
 
 type AdminOutlet = Outlet & { _id: Id<"outlets"> };
 
 export default function AdminOutletsPage() {
-  const outlets = useQuery(api.outlets.list, {}) as AdminOutlet[] | undefined;
+  const outlets = useQuery(api.outlets.listAll, {}) as AdminOutlet[] | undefined;
   const toggleAvailability = useMutation(api.outlets.toggleAvailability);
 
   const handleToggle = async (outletId: Id<"outlets">) => {
@@ -25,14 +26,11 @@ export default function AdminOutletsPage() {
 
   return (
     <div className="space-y-6">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <div>
           <h1 className="text-2xl font-extrabold">All <span className="gradient-text">Outlets</span></h1>
           <p className="text-sm text-muted-foreground">{outlets?.length ?? 0} outlets registered on platform</p>
         </div>
-        <button className="px-4 py-2.5 rounded-xl gradient-primary text-white text-sm font-semibold shadow-colored flex items-center gap-2">
-          <Store className="w-4 h-4" /> Add Outlet
-        </button>
       </motion.div>
 
       {/* Outlets Table */}
@@ -59,6 +57,7 @@ export default function AdminOutletsPage() {
             className="grid grid-cols-12 gap-4 px-4 py-3 text-sm items-center hover:bg-secondary/30 transition-colors border-b border-border/30 last:border-0"
           >
             <div className="col-span-4 flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element -- vendor-supplied URLs from arbitrary hosts */}
               <img src={outlet.image} alt={outlet.name} className="w-10 h-10 rounded-xl object-cover" />
               <div className="min-w-0">
                 <p className="font-bold text-sm truncate">{outlet.name}</p>
@@ -91,16 +90,18 @@ export default function AdminOutletsPage() {
               </span>
             </div>
             <div className="col-span-2 flex items-center justify-end gap-1">
-              <button className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" title="View">
+              <Link
+                href={`/outlets/${outlet.slug}`}
+                className="min-w-10 min-h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors flex items-center justify-center"
+                aria-label={`View ${outlet.name}`}
+              >
                 <Eye className="w-4 h-4" />
-              </button>
-              <button className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" title="Edit">
-                <Edit2 className="w-4 h-4" />
-              </button>
+              </Link>
               <button
+                type="button"
                 onClick={() => handleToggle(outlet._id)}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 transition-colors"
-                title="Toggle Status"
+                className="min-w-10 min-h-10 rounded-lg text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 transition-colors flex items-center justify-center"
+                aria-label={`${outlet.isOpen ? "Close" : "Open"} ${outlet.name}`}
               >
                 <Power className="w-4 h-4" />
               </button>

@@ -14,7 +14,23 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Convex generated code — not hand-written, don't lint it
+    "convex/_generated/**",
   ]),
+  {
+    rules: {
+      // Allow intentionally-unused values when prefixed with an underscore
+      // (e.g. destructuring an object to omit a field)
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          ignoreRestSiblings: true,
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

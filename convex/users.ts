@@ -1,87 +1,136 @@
-import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
+import { mutation, query } from "./_generated/server";
+import { authComponent } from "./auth";
+import { configuredRole, requireAdmin, requireProfile } from "./lib/auth";
+import type { Doc } from "./_generated/dataModel";
 
-export const getOrCreateUser = mutation({
-  args: {
-    clerkId: v.string(),
-    name: v.string(),
-    email: v.string(),
-    avatarUrl: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
+const roleValidator = v.union(
+  v.literal("student"),
+  v.literal("vendor"),
+  v.literal("admin"),
+  v.literal("super_admin")
+);
+
+function withoutSensitivePortalFields(user: Doc<"users">) {
+  const {
+    vendorLoginCodeHash: _vendorLoginCodeHash,
+    portalFailedAttempts: _portalFailedAttempts,
+    portalLockedUntil: _portalLockedUntil,
+    ...safeUser
+  } = user;
+  return safeUser;
+}
+
+export const ensureCurrent = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const authUser = await authComponent.getAuthUser(ctx);
     const existing = await ctx.db
       .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .withIndex("by_authUserId", (q) => q.eq("authUserId", authUser._id))
       .unique();
+    const configured = configuredRole(authUser.email);
 
     if (existing) {
+      const role =
+        configured === "admin"
+          ? existing.role === "super_admin"
+            ? "super_admin"
+            : "admin"
+          : ["admin", "super_admin"].includes(existing.role)
+            ? "student"
+            : existing.role;
       await ctx.db.patch(existing._id, {
-        name: args.name,
-        avatarUrl: args.avatarUrl,
+        name: authUser.name,
+        email: authUser.email.toLowerCase(),
+        avatarUrl: authUser.image ?? undefined,
+        role,
+        ...(role !== existing.role
+          ? {
+              portalAccessExpiresAt: undefined,
+              portalFailedAttempts: 0,
+              portalLockedUntil: undefined,
+            }
+          : {}),
+        ...(role !== "vendor"
+          ? {
+              vendorLoginCodeHash: undefined,
+              vendorLoginCodeIssuedAt: undefined,
+            }
+          : {}),
       });
       return existing._id;
     }
 
     return await ctx.db.insert("users", {
-      clerkId: args.clerkId,
-      name: args.name,
-      email: args.email,
-      phone: undefined,
-      role: "student",
+      authUserId: authUser._id,
+      name: authUser.name,
+      email: authUser.email.toLowerCase(),
+      role: configured,
       status: "active",
-      avatarUrl: args.avatarUrl,
+      avatarUrl: authUser.image ?? undefined,
       favoriteOutlets: [],
       preferences: {},
     });
   },
 });
 
-export const getUser = query({
-  args: { clerkId: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db
+export const current = query({
+  args: {},
+  handler: async (ctx) => {
+    const authUser = await authComponent.safeGetAuthUser(ctx);
+    if (!authUser) return null;
+    const profile = await ctx.db
       .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .withIndex("by_authUserId", (q) => q.eq("authUserId", authUser._id))
       .unique();
+    return {
+      authUser,
+      profile: profile ? withoutSensitivePortalFields(profile) : null,
+    };
   },
 });
 
 export const listByRole = query({
-  args: {
-    role: v.union(
-      v.literal("student"),
-      v.literal("vendor"),
-      v.literal("admin"),
-      v.literal("super_admin")
-    ),
-  },
+  args: { role: roleValidator },
   handler: async (ctx, args) => {
-    return await ctx.db
+    await requireAdmin(ctx);
+    const users = await ctx.db
       .query("users")
       .withIndex("by_role", (q) => q.eq("role", args.role))
       .collect();
+    return users.map(withoutSensitivePortalFields);
   },
 });
 
 export const listAll = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("users").collect();
+    await requireAdmin(ctx);
+    const users = await ctx.db.query("users").collect();
+    return users.map(withoutSensitivePortalFields);
   },
 });
 
 export const updateRole = mutation({
-  args: {
-    userId: v.id("users"),
-    role: v.union(
-      v.literal("student"),
-      v.literal("vendor"),
-      v.literal("admin"),
-      v.literal("super_admin")
-    ),
-  },
+  args: { userId: v.id("users"), role: roleValidator },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.userId, { role: args.role });
+    const actor = await requireAdmin(ctx);
+    if (args.role === "super_admin" && actor.profile.role !== "super_admin") {
+      throw new ConvexError("Only a super administrator can grant that role.");
+    }
+    await ctx.db.patch(args.userId, {
+      role: args.role,
+      portalAccessExpiresAt: undefined,
+      portalFailedAttempts: 0,
+      portalLockedUntil: undefined,
+      ...(args.role !== "vendor"
+        ? {
+            vendorLoginCodeHash: undefined,
+            vendorLoginCodeIssuedAt: undefined,
+          }
+        : {}),
+    });
   },
 });
 
@@ -95,6 +144,10 @@ export const updateStatus = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    const actor = await requireAdmin(ctx);
+    if (actor.profile._id === args.userId && args.status === "suspended") {
+      throw new ConvexError("You cannot suspend your own account.");
+    }
     await ctx.db.patch(args.userId, { status: args.status });
   },
 });
@@ -102,19 +155,33 @@ export const updateStatus = mutation({
 export const assignOutlet = mutation({
   args: {
     userId: v.id("users"),
-    outletId: v.id("outlets"),
+    outletId: v.optional(v.id("outlets")),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const user = await ctx.db.get(args.userId);
+    if (!user) throw new ConvexError("User not found.");
+    if (args.outletId && !(await ctx.db.get(args.outletId))) {
+      throw new ConvexError("Outlet not found.");
+    }
     await ctx.db.patch(args.userId, {
       assignedOutletId: args.outletId,
-      role: "vendor",
+      role: args.outletId ? "vendor" : "student",
+      portalAccessExpiresAt: undefined,
+      portalFailedAttempts: 0,
+      portalLockedUntil: undefined,
+      ...(!args.outletId
+        ? {
+            vendorLoginCodeHash: undefined,
+            vendorLoginCodeIssuedAt: undefined,
+          }
+        : {}),
     });
   },
 });
 
 export const updateProfile = mutation({
   args: {
-    clerkId: v.string(),
     phone: v.optional(v.string()),
     preferences: v.optional(
       v.object({
@@ -124,43 +191,24 @@ export const updateProfile = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .unique();
-
-    if (!user) throw new Error("User not found");
-
-    const updates: Record<string, unknown> = {};
-    if (args.phone !== undefined) updates.phone = args.phone;
+    const { profile } = await requireProfile(ctx);
+    const updates: {
+      phone?: string;
+      preferences?: typeof profile.preferences;
+    } = {};
+    if (args.phone !== undefined) updates.phone = args.phone.trim().slice(0, 20);
     if (args.preferences !== undefined) updates.preferences = args.preferences;
-
-    await ctx.db.patch(user._id, updates);
+    await ctx.db.patch(profile._id, updates);
   },
 });
 
 export const toggleFavoriteOutlet = mutation({
-  args: {
-    clerkId: v.string(),
-    outletId: v.string(),
-  },
+  args: { outletId: v.string() },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .unique();
-
-    if (!user) throw new Error("User not found");
-
-    const favorites = user.favoriteOutlets;
-    const index = favorites.indexOf(args.outletId);
-
-    if (index >= 0) {
-      favorites.splice(index, 1);
-    } else {
-      favorites.push(args.outletId);
-    }
-
-    await ctx.db.patch(user._id, { favoriteOutlets: favorites });
+    const { profile } = await requireProfile(ctx);
+    const favorites = new Set(profile.favoriteOutlets);
+    if (favorites.has(args.outletId)) favorites.delete(args.outletId);
+    else favorites.add(args.outletId);
+    await ctx.db.patch(profile._id, { favoriteOutlets: [...favorites] });
   },
 });

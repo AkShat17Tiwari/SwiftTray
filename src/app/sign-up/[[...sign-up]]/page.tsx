@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 
 /**
- * Sign-up redirects to the unified auth gateway at /sign-in.
+ * Public registration is for student accounts. Vendor access is requested
+ * after signing in, and administrator accounts are provisioned separately.
  */
 export default function SignUpPage() {
-  redirect("/sign-in");
+  redirect("/sign-in/student?mode=sign-up");
 }

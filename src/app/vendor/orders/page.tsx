@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -29,10 +28,9 @@ const FILTERS: { value: StatusFilter; label: string }[] = [
 
 export default function VendorOrdersPage() {
   const [filter, setFilter] = useState<StatusFilter>("all");
-  const { user } = useUser();
   const workspace = useQuery(
     api.dashboards.vendorWorkspace,
-    user?.id ? { vendorUserId: user.id } : "skip"
+    {}
   ) as { recentOrders: VendorOrder[] } | null | undefined;
   const updateStatus = useMutation(api.orders.updateStatus);
   const orders = workspace?.recentOrders ?? [];
@@ -114,7 +112,7 @@ export default function VendorOrdersPage() {
                 <Package className="w-8 h-8 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-bold mb-1">No outlet assigned</h3>
-              <p className="text-sm text-muted-foreground">Verify a vendor key to see your outlet orders</p>
+              <p className="text-sm text-muted-foreground">Request vendor access to see your outlet orders</p>
             </div>
           ) : filteredOrders.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
