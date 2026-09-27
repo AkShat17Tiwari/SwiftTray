@@ -12,8 +12,16 @@
 [![Razorpay](https://img.shields.io/badge/Razorpay-Integrated-0C2340?style=for-the-badge&logo=razorpay&logoColor=3395FF)](https://razorpay.com/)
 [![Tests](https://img.shields.io/badge/Tests-Vitest_Passing-22c55e?style=for-the-badge&logo=vitest&logoColor=white)](https://vitest.dev/)
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-swifttray.vercel.app-22c55e?style=for-the-badge&logo=vercel&logoColor=white)](https://swifttray.vercel.app)
+
 <p align="center">
   Skip the lines. SwiftTray bridges students, campus food outlets, and university administrators through live menus, zero-trust server-priced checkout, instant Razorpay payments, and real-time reactive order tracking.
+</p>
+
+<p align="center">
+  <a href="https://swifttray.vercel.app" target="_blank">
+    <strong>🔗 Visit Live App: https://swifttray.vercel.app</strong>
+  </a>
 </p>
 
 </div>
