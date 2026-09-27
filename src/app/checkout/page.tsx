@@ -156,6 +156,12 @@ export default function CheckoutPage() {
         toast.error("Payment was not completed. You can retry this saved order.");
         setProcessing(false);
       });
+      if (checkout.keyId.startsWith("rzp_test_")) {
+        toast.info(
+          "Test Mode: Real UPI apps cannot scan sandbox QR codes. Select UPI ID and use 'success@razorpay' or use a test card.",
+          { duration: 7000 }
+        );
+      }
       razorpay.open();
     } catch (error) {
       toast.error(errorMessage(error));
